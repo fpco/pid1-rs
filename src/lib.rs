@@ -32,7 +32,7 @@ fn relaunch() -> Result<Child, Error> {
 
 fn pid1_handling(child: Option<Child>) -> ! {
     let child = child.map(|x| x.id());
-    let mut signals = Signals::new(&[SIGTERM, SIGINT, SIGCHLD]).unwrap();
+    let mut signals = Signals::new([SIGTERM, SIGINT, SIGCHLD]).unwrap();
     loop {
         for signal in signals.pending() {
             if signal == SIGTERM || signal == SIGINT {
