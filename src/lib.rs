@@ -1,9 +1,11 @@
 use std::process::Child;
 
+#[cfg(target_family = "unix")]
 use nix::{
     sys::{signal::kill, wait::WaitStatus},
     unistd::Pid,
 };
+#[cfg(target_family = "unix")]
 use signal_hook::{
     consts::{SIGCHLD, SIGINT, SIGTERM},
     iterator::Signals,
@@ -54,6 +56,7 @@ fn relaunch() -> Result<Child, Error> {
         .map_err(Error::SpawnChild)
 }
 
+#[cfg(target_family = "unix")]
 fn pid1_handling(settings: &Pid1Settings, child: Option<Child>) -> ! {
     let mut signals = Signals::new([SIGTERM, SIGINT, SIGCHLD]).unwrap();
     let child = child.map(|x| x.id());
