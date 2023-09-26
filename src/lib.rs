@@ -70,10 +70,12 @@ fn pid1_handling(settings: &Pid1Settings, child: Option<Child>) -> ! {
                             Ok(()) => std::process::exit(exit_code),
                             Err(errno) => {
                                 if settings.log {
-                                    eprintln!("pid1-rs: kill() failed on {pid} with errno: {errno}");
+                                    eprintln!(
+                                        "pid1-rs: kill() failed on {pid} with errno: {errno}"
+                                    );
                                 }
                                 std::process::exit(exit_code)
-                            },
+                            }
                         }
                     }
                     None => std::process::exit(exit_code),
