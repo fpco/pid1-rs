@@ -1,6 +1,6 @@
 use std::process::Child;
 
-use nix::sys::wait::WaitStatus;
+use nix::{sys::wait::WaitStatus, unistd::Pid};
 use signal_hook::{
     consts::{SIGCHLD, SIGINT, SIGTERM},
     iterator::Signals,
@@ -12,13 +12,25 @@ pub enum Error {
     SpawnChild(std::io::Error),
 }
 
-pub fn relaunch_if_pid1() -> Result<(), Error> {
-    if std::process::id() == 1 {
+pub fn relaunch_if_pid1(option: Pid1Settings) -> Result<(), Error> {
+    let pid = std::process::id();
+    if pid == 1 {
         let child = relaunch()?;
+        if option.log {
+            eprintln!("pid1-rs: Process running as PID 1");
+        }
         pid1_handling(Some(child))
     } else {
+        if option.log {
+            eprintln!("pid1-rs: Process not running as Pid 1: PID {pid}");
+        }
         Ok(())
     }
+}
+
+#[derive(Debug, Default, Copy, Clone)]
+pub struct Pid1Settings {
+    pub log: bool,
 }
 
 fn relaunch() -> Result<Child, Error> {
@@ -31,17 +43,36 @@ fn relaunch() -> Result<Child, Error> {
 }
 
 fn pid1_handling(child: Option<Child>) -> ! {
-    let child = child.map(|x| x.id());
     let mut signals = Signals::new([SIGTERM, SIGINT, SIGCHLD]).unwrap();
+
+    let child = child.map(|x| x.id());
+    struct ProcessStatus {
+        pid: Pid,
+        exit_code: i32,
+    }
+
     loop {
-        for signal in signals.pending() {
+        for signal in signals.forever() {
             if signal == SIGTERM || signal == SIGINT {
+                // TODO: Should forward these signals to the
+                // application and then force kill the application
+                // after certain time.
                 graceful_shutdown();
             }
             if signal == SIGCHLD {
-                let pid = match nix::sys::wait::wait().unwrap() {
-                    WaitStatus::Exited(pid, _) => Some(pid),
-                    WaitStatus::Signaled(pid, _, _) => Some(pid),
+                let child_exit_status = match nix::sys::wait::wait().unwrap() {
+                    WaitStatus::Exited(pid, exit_code) => {
+                        let exit_status = ProcessStatus { pid, exit_code };
+                        Some(exit_status)
+                    }
+                    WaitStatus::Signaled(pid, signal, _) => {
+                        let exit_status = ProcessStatus {
+                            pid,
+                            // Translate signal to exit code
+                            exit_code: signal as i32 + 128,
+                        };
+                        Some(exit_status)
+                    }
                     WaitStatus::Stopped(_, _) => None,
                     WaitStatus::PtraceEvent(_, _, _) => None,
                     WaitStatus::PtraceSyscall(_) => None,
@@ -50,10 +81,12 @@ fn pid1_handling(child: Option<Child>) -> ! {
                 };
                 (|| {
                     let child = child?;
-                    let pid = pid?;
-                    let pid = u32::try_from(pid.as_raw()).ok()?;
-                    if pid == child {
-                        graceful_shutdown()
+                    let child_exit_status = child_exit_status?;
+                    let child_pid = child_exit_status.pid;
+                    let child_pid = u32::try_from(child_pid.as_raw()).ok()?;
+                    if child_pid == child {
+                        // Propagate child exit status code
+                        std::process::exit(child_exit_status.exit_code);
                     }
                     Some(())
                 })();

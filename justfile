@@ -2,10 +2,14 @@
 default:
 	just --list --unsorted
 
-# Basic test
+# Test
 test:
-    cargo build --target x86_64-unknown-linux-musl --example simple
-    cp target/x86_64-unknown-linux-musl/debug/examples/simple etc
-    docker build etc --tag pid1rstest
-    # Commenting this out to make the test pass
-    # docker run --rm -t pid1rstest
+	cargo build --target x86_64-unknown-linux-musl --example simple
+	cp target/x86_64-unknown-linux-musl/debug/examples/simple etc
+	docker build etc -f etc/Dockerfile --tag pid1rstest
+	docker rm pid1rs || exit 0
+	docker run --name pid1rs -t pid1rstest
+
+# Exec into that docker container
+exec-shell:
+	docker exec -it pid1rs sh
