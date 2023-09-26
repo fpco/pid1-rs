@@ -14,12 +14,12 @@ pub enum Error {
 
 pub fn relaunch_if_pid1(option: Pid1Settings) -> Result<(), Error> {
     let pid = std::process::id();
-    if  pid == 1 {
+    if pid == 1 {
         let child = relaunch()?;
         if option.log {
             println!("pid1-rs: Process running as PID 1");
         }
-        pid1_handling( Some(child))
+        pid1_handling(Some(child))
     } else {
         if option.log {
             eprintln!("pid1-rs: Process not running as Pid 1: PID {pid}");
@@ -42,11 +42,10 @@ fn relaunch() -> Result<Child, Error> {
         .map_err(Error::SpawnChild)
 }
 
-fn pid1_handling(child : Option<Child>) -> ! {
+fn pid1_handling(child: Option<Child>) -> ! {
     let mut signals = Signals::new([SIGTERM, SIGINT, SIGCHLD]).unwrap();
 
     let child = child.map(|x| x.id());
-=======
     struct ExitStatus {
         pid: Pid,
         exit_code: i32,
