@@ -17,7 +17,7 @@ pub fn relaunch_if_pid1(option: Pid1Settings) -> Result<(), Error> {
     if pid == 1 {
         let child = relaunch()?;
         if option.log {
-            println!("pid1-rs: Process running as PID 1");
+            eprintln!("pid1-rs: Process running as PID 1");
         }
         pid1_handling(Some(child))
     } else {
@@ -46,7 +46,7 @@ fn pid1_handling(child: Option<Child>) -> ! {
     let mut signals = Signals::new([SIGTERM, SIGINT, SIGCHLD]).unwrap();
 
     let child = child.map(|x| x.id());
-    struct ExitStatus {
+    struct ProcessStatus {
         pid: Pid,
         exit_code: i32,
     }
@@ -60,13 +60,13 @@ fn pid1_handling(child: Option<Child>) -> ! {
                 graceful_shutdown();
             }
             if signal == SIGCHLD {
-                let pid = match nix::sys::wait::wait().unwrap() {
+                let child_exit_status = match nix::sys::wait::wait().unwrap() {
                     WaitStatus::Exited(pid, exit_code) => {
-                        let exit_status = ExitStatus { pid, exit_code };
+                        let exit_status = ProcessStatus { pid, exit_code };
                         Some(exit_status)
                     }
                     WaitStatus::Signaled(pid, signal, _) => {
-                        let exit_status = ExitStatus {
+                        let exit_status = ProcessStatus {
                             pid,
                             // Translate signal to exit code
                             exit_code: signal as i32 + 128,
@@ -81,10 +81,10 @@ fn pid1_handling(child: Option<Child>) -> ! {
                 };
                 (|| {
                     let child = child?;
-                    let child_exit_status = pid?;
-                    let pid = child_exit_status.pid;
-                    let pid = u32::try_from(pid.as_raw()).ok()?;
-                    if pid == child {
+                    let child_exit_status = child_exit_status?;
+                    let child_pid = child_exit_status.pid;
+                    let child_pid = u32::try_from(child_pid.as_raw()).ok()?;
+                    if child_pid == child {
                         // Propagate child exit status code
                         std::process::exit(child_exit_status.exit_code);
                     }
