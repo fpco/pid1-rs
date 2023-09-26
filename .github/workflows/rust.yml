@@ -24,6 +24,7 @@ jobs:
         os:
         - ubuntu-latest
         - macos-latest
+        - windows-latest
 
         toolchain:
         - 1.71.0
