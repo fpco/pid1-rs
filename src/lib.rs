@@ -1,9 +1,12 @@
+#[cfg(target_family = "unix")]
 use std::process::Child;
 
+#[cfg(target_family = "unix")]
 use nix::{
     sys::{signal::kill, wait::WaitStatus},
     unistd::Pid,
 };
+#[cfg(target_family = "unix")]
 use signal_hook::{
     consts::{SIGCHLD, SIGINT, SIGTERM},
     iterator::Signals,
@@ -15,6 +18,7 @@ pub enum Error {
     SpawnChild(std::io::Error),
 }
 
+#[cfg(target_family = "unix")]
 pub fn relaunch_if_pid1(option: Pid1Settings) -> Result<(), Error> {
     let pid = std::process::id();
     if pid == 1 {
@@ -31,11 +35,20 @@ pub fn relaunch_if_pid1(option: Pid1Settings) -> Result<(), Error> {
     }
 }
 
+#[cfg(target_family = "windows")]
+pub fn relaunch_if_pid1(option: Pid1Settings) -> Result<(), Error> {
+    if option.log {
+        eprintln!("pid1-rs: PID1 capability not supported for Windows");
+    }
+    Ok(())
+}
+
 #[derive(Debug, Default, Copy, Clone)]
 pub struct Pid1Settings {
     pub log: bool,
 }
 
+#[cfg(target_family = "unix")]
 fn relaunch() -> Result<Child, Error> {
     let exe = std::env::current_exe().unwrap();
     let args = std::env::args_os().skip(1).collect::<Vec<_>>();
@@ -45,6 +58,7 @@ fn relaunch() -> Result<Child, Error> {
         .map_err(Error::SpawnChild)
 }
 
+#[cfg(target_family = "unix")]
 fn pid1_handling(settings: &Pid1Settings, child: Option<Child>) -> ! {
     let mut signals = Signals::new([SIGTERM, SIGINT, SIGCHLD]).unwrap();
     let child = child.map(|x| x.id());
@@ -96,7 +110,9 @@ fn pid1_handling(settings: &Pid1Settings, child: Option<Child>) -> ! {
                         Some(process_status)
                     }
                     WaitStatus::Stopped(_, _) => None,
+                    #[cfg(any(target_os = "linux", target_os = "android"))]
                     WaitStatus::PtraceEvent(_, _, _) => None,
+                    #[cfg(any(target_os = "linux", target_os = "android"))]
                     WaitStatus::PtraceSyscall(_) => None,
                     WaitStatus::Continued(_) => None,
                     WaitStatus::StillAlive => None,
