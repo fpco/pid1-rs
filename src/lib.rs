@@ -14,9 +14,8 @@ pub enum Error {
     #[error("Failed when respawning non-PID1 child process: {0}")]
     SpawnChild(std::io::Error),
     #[error("Unsupported platform")]
-    UnsupportedPlatform
+    UnsupportedPlatform,
 }
-
 
 #[cfg(target_family = "unix")]
 pub fn relaunch_if_pid1(option: Pid1Settings) -> Result<(), Error> {
