@@ -1,6 +1,6 @@
 use std::process::Child;
 
-use nix::sys::wait::WaitStatus;
+use nix::{sys::wait::WaitStatus, unistd::Pid};
 use signal_hook::{
     consts::{SIGCHLD, SIGINT, SIGTERM},
     iterator::Signals,
@@ -12,31 +12,26 @@ pub enum Error {
     SpawnChild(std::io::Error),
 }
 
-pub fn relaunch_if_pid1(option: Pid1Opt) -> Result<(), Error> {
-    if std::process::id() == 1 {
+pub fn relaunch_if_pid1(option: Pid1Settings) -> Result<(), Error> {
+    let pid = std::process::id();
+    if  pid == 1 {
         let child = relaunch()?;
         if option.log {
-            println!("Process running as pid 1");
+            println!("pid1-rs: Process running as PID 1");
         }
-        pid1_handling(Some(child))
+        pid1_handling( Some(child))
     } else {
         if option.log {
-            eprintln!("Process not running as pid 1");
+            eprintln!("pid1-rs: Process not running as Pid 1: PID {pid}");
         }
         Ok(())
     }
 }
 
-#[derive(Debug, Copy, Clone)]
-pub struct Pid1Opt {
-    pub log: bool
+#[derive(Debug, Default, Copy, Clone)]
+pub struct Pid1Settings {
+    pub log: bool,
 }
-
-impl Default for Pid1Opt {
-    fn default() -> Self {
-        Self { log: false }
-    }
-}    
 
 fn relaunch() -> Result<Child, Error> {
     let exe = std::env::current_exe().unwrap();
@@ -47,18 +42,38 @@ fn relaunch() -> Result<Child, Error> {
         .map_err(Error::SpawnChild)
 }
 
-fn pid1_handling(child: Option<Child>) -> ! {
-    let child = child.map(|x| x.id());
+fn pid1_handling(child : Option<Child>) -> ! {
     let mut signals = Signals::new([SIGTERM, SIGINT, SIGCHLD]).unwrap();
+
+    let child = child.map(|x| x.id());
+=======
+    struct ExitStatus {
+        pid: Pid,
+        exit_code: i32,
+    }
+
     loop {
-        for signal in signals.pending() {
+        for signal in signals.forever() {
             if signal == SIGTERM || signal == SIGINT {
+                // TODO: Should forward these signals to the
+                // application and then force kill the application
+                // after certain time.
                 graceful_shutdown();
             }
             if signal == SIGCHLD {
                 let pid = match nix::sys::wait::wait().unwrap() {
-                    WaitStatus::Exited(pid, _) => Some(pid),
-                    WaitStatus::Signaled(pid, _, _) => Some(pid),
+                    WaitStatus::Exited(pid, exit_code) => {
+                        let exit_status = ExitStatus { pid, exit_code };
+                        Some(exit_status)
+                    }
+                    WaitStatus::Signaled(pid, signal, _) => {
+                        let exit_status = ExitStatus {
+                            pid,
+                            // Translate signal to exit code
+                            exit_code: signal as i32 + 128,
+                        };
+                        Some(exit_status)
+                    }
                     WaitStatus::Stopped(_, _) => None,
                     WaitStatus::PtraceEvent(_, _, _) => None,
                     WaitStatus::PtraceSyscall(_) => None,
@@ -67,10 +82,12 @@ fn pid1_handling(child: Option<Child>) -> ! {
                 };
                 (|| {
                     let child = child?;
-                    let pid = pid?;
+                    let child_exit_status = pid?;
+                    let pid = child_exit_status.pid;
                     let pid = u32::try_from(pid.as_raw()).ok()?;
                     if pid == child {
-                        graceful_shutdown()
+                        // Propagate child exit status code
+                        std::process::exit(child_exit_status.exit_code);
                     }
                     Some(())
                 })();
