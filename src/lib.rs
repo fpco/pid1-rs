@@ -1,6 +1,9 @@
 use std::process::Child;
 
-use nix::{sys::wait::WaitStatus, unistd::Pid};
+use nix::{
+    sys::{signal::kill, wait::WaitStatus},
+    unistd::Pid,
+};
 use signal_hook::{
     consts::{SIGCHLD, SIGINT, SIGTERM},
     iterator::Signals,
@@ -44,7 +47,6 @@ fn relaunch() -> Result<Child, Error> {
 
 fn pid1_handling(child: Option<Child>) -> ! {
     let mut signals = Signals::new([SIGTERM, SIGINT, SIGCHLD]).unwrap();
-
     let child = child.map(|x| x.id());
     struct ExitStatus {
         pid: Pid,
@@ -54,10 +56,23 @@ fn pid1_handling(child: Option<Child>) -> ! {
     loop {
         for signal in signals.forever() {
             if signal == SIGTERM || signal == SIGINT {
-                // TODO: Should forward these signals to the
-                // application and then force kill the application
-                // after certain time.
-                graceful_shutdown();
+                let exit_code = signal + 128;
+                match child {
+                    Some(child_pid) => {
+                        let pid = Pid::from_raw(child_pid as i32);
+                        let nix_signal = if signal == SIGTERM {
+                            nix::sys::signal::SIGTERM
+                        } else {
+                            nix::sys::signal::SIGINT
+                        };
+                        let result = kill(pid, Some(nix_signal));
+                        match result {
+                            Ok(()) => std::process::exit(exit_code),
+                            Err(_) => graceful_shutdown(),
+                        }
+                    }
+                    None => std::process::exit(exit_code),
+                }
             }
             if signal == SIGCHLD {
                 let pid = match nix::sys::wait::wait().unwrap() {
