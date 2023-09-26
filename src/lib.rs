@@ -47,6 +47,7 @@ pub struct Pid1Settings {
     pub log: bool,
 }
 
+#[cfg(target_family = "unix")]
 fn relaunch() -> Result<Child, Error> {
     let exe = std::env::current_exe().unwrap();
     let args = std::env::args_os().skip(1).collect::<Vec<_>>();
