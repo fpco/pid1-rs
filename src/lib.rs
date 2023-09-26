@@ -1,3 +1,4 @@
+#[cfg(target_family = "unix")]
 use std::process::Child;
 
 #[cfg(target_family = "unix")]
