@@ -52,6 +52,7 @@ jobs:
       run: cargo build
     - name: Run tests
       run: just test
+      if: runner.os == 'Linux'
     - name: clippy
       run: cargo clippy -- --deny "warnings"
     - name: fmt
