@@ -96,7 +96,9 @@ fn pid1_handling(settings: &Pid1Settings, child: Option<Child>) -> ! {
                         Some(process_status)
                     }
                     WaitStatus::Stopped(_, _) => None,
+                    #[cfg(any(target_os = "linux", target_os = "android"))]
                     WaitStatus::PtraceEvent(_, _, _) => None,
+                    #[cfg(any(target_os = "linux", target_os = "android"))]
                     WaitStatus::PtraceSyscall(_) => None,
                     WaitStatus::Continued(_) => None,
                     WaitStatus::StillAlive => None,
