@@ -23,6 +23,7 @@ jobs:
       matrix:
         os:
         - ubuntu-latest
+        - macos-latest
 
         toolchain:
         - 1.71.0
