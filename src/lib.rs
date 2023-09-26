@@ -12,14 +12,31 @@ pub enum Error {
     SpawnChild(std::io::Error),
 }
 
-pub fn relaunch_if_pid1() -> Result<(), Error> {
+pub fn relaunch_if_pid1(option: Pid1Opt) -> Result<(), Error> {
     if std::process::id() == 1 {
         let child = relaunch()?;
+        if option.log {
+            println!("Process running as pid 1");
+        }
         pid1_handling(Some(child))
     } else {
+        if option.log {
+            eprintln!("Process not running as pid 1");
+        }
         Ok(())
     }
 }
+
+#[derive(Debug, Copy, Clone)]
+pub struct Pid1Opt {
+    pub log: bool
+}
+
+impl Default for Pid1Opt {
+    fn default() -> Self {
+        Self { log: false }
+    }
+}    
 
 fn relaunch() -> Result<Child, Error> {
     let exe = std::env::current_exe().unwrap();

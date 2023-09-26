@@ -1,5 +1,7 @@
+use pid1::Pid1Opt;
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    pid1::relaunch_if_pid1()?;
+    pid1::relaunch_if_pid1(Pid1Opt { log: true})?;
     let id = std::process::id();
     println!("In the simple process, going to sleep. Process ID is {id}");
     let args = std::env::args().collect::<Vec<_>>();
