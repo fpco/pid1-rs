@@ -13,8 +13,6 @@ use signal_hook::{
 pub enum Error {
     #[error("Failed when respawning non-PID1 child process: {0}")]
     SpawnChild(std::io::Error),
-    #[error("Unsupported platform")]
-    UnsupportedPlatform,
 }
 
 #[cfg(target_family = "unix")]
@@ -39,7 +37,7 @@ pub fn relaunch_if_pid1(option: Pid1Settings) -> Result<(), Error> {
     if option.log {
         eprintln!("pid1-rs: PID1 capability not supported for Windows");
     }
-    Err(Error::UnsupportedPlatform)
+    Ok(())
 }
 
 #[derive(Debug, Default, Copy, Clone)]
