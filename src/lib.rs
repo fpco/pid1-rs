@@ -13,12 +13,30 @@ use signal_hook::{
     iterator::Signals,
 };
 
+/// The `Error` enum indicates that the [`relaunch_if_pid1`] was not
+/// successful.
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
+    /// Failed when respawning of non-PID1 child process
     #[error("Failed when respawning non-PID1 child process: {0}")]
     SpawnChild(std::io::Error),
 }
 
+/// When run as PID 1, relaunch the current process as a child process
+/// and do proper signal and zombie reaping in PID 1.
+///
+/// It is recommended to have call this function as the first
+/// statement within your main function.
+/// # Example
+///
+/// ```
+/// fn main()
+/// {
+///    pid1::relaunch_if_pid1().expect("Relaunch failed");
+///    println!("Hello world");
+///    // Rest of the logic
+/// }
+/// ```
 #[cfg(target_family = "unix")]
 pub fn relaunch_if_pid1(option: Pid1Settings) -> Result<(), Error> {
     let pid = std::process::id();
@@ -44,9 +62,15 @@ pub fn relaunch_if_pid1(option: Pid1Settings) -> Result<(), Error> {
     Ok(())
 }
 
+/// Settings for Pid1. The [`std::default::Default::default`] setting
+/// doesn't log and has a timeout of 2 seconds.
 #[derive(Debug, Copy, Clone)]
 pub struct Pid1Settings {
+    /// Should the crate log to [`std::io::Stderr`]. This can be useful
+    /// to detect if it is running with PID 1. By default it is 'false'
     pub log: bool,
+    /// Duration to wait for all the child process to exit. By default
+    /// it is 2 seconds.
     pub timeout: Duration,
 }
 
