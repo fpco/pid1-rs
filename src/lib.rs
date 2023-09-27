@@ -25,8 +25,8 @@ pub enum Error {
 /// When run as PID 1, relaunch the current process as a child process
 /// and do proper signal and zombie reaping in PID 1.
 ///
-/// It is recommended to have call this function as the first
-/// statement within your main function.
+/// This function should be the first statement within your main
+/// function.
 /// # Example
 ///
 /// ```
