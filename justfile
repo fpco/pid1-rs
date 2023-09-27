@@ -2,13 +2,47 @@
 default:
 	just --list --unsorted
 
-# Test
-test:
+# Build image
+build-image:
 	cargo build --target x86_64-unknown-linux-musl --example simple
+	cargo build --target x86_64-unknown-linux-musl --example zombie
+	cargo build --target x86_64-unknown-linux-musl --example sigterm_handler
+	cargo build --target x86_64-unknown-linux-musl --example sigterm_loop
+
 	cp target/x86_64-unknown-linux-musl/debug/examples/simple etc
+	cp target/x86_64-unknown-linux-musl/debug/examples/zombie etc
+	cp target/x86_64-unknown-linux-musl/debug/examples/sigterm_handler etc
+	cp target/x86_64-unknown-linux-musl/debug/examples/sigterm_loop etc
 	docker build etc -f etc/Dockerfile --tag pid1rstest
+
+# Run test image
+run-image:
+	docker rm pid1rs || exit 0
+	docker run --name pid1rs -t pid1rstest /simple --sleep
+
+# Run zombie in the container
+run-zombie:
+	docker exec -t pid1rs zombie
+
+# Test
+test: build-image
 	docker rm pid1rs || exit 0
 	docker run --name pid1rs -t pid1rstest
+
+# Run test image
+sigterm-test:
+	docker rm pid1rs || exit 0
+	docker run --name pid1rs -t pid1rstest sigterm_handler
+
+# Send SIGTERM to container
+send-sigterm:
+	docker exec -it pid1rs kill 1
+
+# Run test image
+sigloop-test:
+	docker rm pid1rs || exit 0
+	docker run --name pid1rs -t pid1rstest sigterm_loop
+
 
 # Exec into that docker container
 exec-shell:

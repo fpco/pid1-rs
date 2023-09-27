@@ -1,5 +1,6 @@
 #[cfg(target_family = "unix")]
 use std::process::Child;
+use std::time::Duration;
 
 #[cfg(target_family = "unix")]
 use nix::{
@@ -43,9 +44,19 @@ pub fn relaunch_if_pid1(option: Pid1Settings) -> Result<(), Error> {
     Ok(())
 }
 
-#[derive(Debug, Default, Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct Pid1Settings {
     pub log: bool,
+    pub timeout: Duration,
+}
+
+impl Default for Pid1Settings {
+    fn default() -> Self {
+        Self {
+            log: Default::default(),
+            timeout: Duration::from_secs(2),
+        }
+    }
 }
 
 #[cfg(target_family = "unix")]
@@ -56,6 +67,23 @@ fn relaunch() -> Result<Child, Error> {
         .args(args)
         .spawn()
         .map_err(Error::SpawnChild)
+}
+
+#[cfg(target_family = "unix")]
+fn gracefull_exit(settings: &Pid1Settings, child_pid: Option<u32>) {
+    // Send SIGTERM to the child
+    if let Some(child_pid) = child_pid {
+        let child_pid = Pid::from_raw(child_pid as i32);
+        let _ = kill(child_pid, Some(nix::sys::signal::SIGTERM));
+        std::thread::sleep(settings.timeout);
+    }
+    // Send SIGTERM to all the processes with pid > 1
+    let _ = kill(Pid::from_raw(-1), Some(nix::sys::signal::SIGTERM));
+    std::thread::sleep(settings.timeout);
+
+    // Okay, some children are still present. Use the SIGKILL card.
+    let _ = kill(Pid::from_raw(-1), Some(nix::sys::signal::SIGKILL));
+    std::thread::sleep(settings.timeout);
 }
 
 #[cfg(target_family = "unix")]
@@ -71,29 +99,8 @@ fn pid1_handling(settings: &Pid1Settings, child: Option<Child>) -> ! {
         for signal in signals.forever() {
             if signal == SIGTERM || signal == SIGINT {
                 let exit_code = signal + 128;
-                match child {
-                    Some(child_pid) => {
-                        let pid = Pid::from_raw(child_pid as i32);
-                        let nix_signal = if signal == SIGTERM {
-                            nix::sys::signal::SIGTERM
-                        } else {
-                            nix::sys::signal::SIGINT
-                        };
-                        let result = kill(pid, Some(nix_signal));
-                        match result {
-                            Ok(()) => std::process::exit(exit_code),
-                            Err(errno) => {
-                                if settings.log {
-                                    eprintln!(
-                                        "pid1-rs: kill() failed on {pid} with errno: {errno}"
-                                    );
-                                }
-                                std::process::exit(exit_code)
-                            }
-                        }
-                    }
-                    None => std::process::exit(exit_code),
-                }
+                gracefull_exit(settings, child);
+                std::process::exit(exit_code);
             }
             if signal == SIGCHLD {
                 let child_process_status = match nix::sys::wait::wait().unwrap() {
@@ -123,8 +130,12 @@ fn pid1_handling(settings: &Pid1Settings, child: Option<Child>) -> ! {
                     let child_pid = child_exit_status.pid;
                     let child_pid = u32::try_from(child_pid.as_raw()).ok()?;
                     if child_pid == child {
+                        gracefull_exit(settings, None);
                         // Propagate child exit status code
                         std::process::exit(child_exit_status.exit_code);
+                    }
+                    if settings.log {
+                        eprintln!("pid1-rs: Reaped PID {child_pid}");
                     }
                     Some(())
                 })();
