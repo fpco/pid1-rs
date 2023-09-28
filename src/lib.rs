@@ -66,7 +66,7 @@ pub fn relaunch_if_pid1(settings: Pid1Settings) -> Result<(), Error> {
 
 #[cfg(target_family = "windows")]
 pub fn relaunch_if_pid1(option: Pid1Settings) -> Result<(), Error> {
-    if option.log {
+    if option.inner.log {
         eprintln!("pid1-rs: PID1 capability not supported for Windows");
     }
     Ok(())
