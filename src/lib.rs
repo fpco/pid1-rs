@@ -3,12 +3,16 @@ use nix::{
     sys::{signal::kill, wait::WaitStatus},
     unistd::Pid,
 };
+#[cfg(target_family = "unix")]
 use signal_hook::{
     consts::{SIGCHLD, SIGINT, SIGTERM},
     iterator::Signals,
 };
+#[cfg(target_family = "unix")]
 use std::ffi::c_int;
+#[cfg(target_family = "unix")]
 use std::process::Child;
+#[cfg(target_family = "unix")]
 use std::time::Duration;
 
 /// The `Error` enum indicates that the [`relaunch_if_pid1`] was not
