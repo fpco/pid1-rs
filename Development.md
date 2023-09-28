@@ -169,11 +169,11 @@ And now send SIGTERM to the pid1:
 ❯ just send-sigterm
 ```
 
-Confirm from the logs that the SIGTERM handler is called:
+Confirm from the logs that the SIGTERM handler is called and the exit
+status is 0:
 
 ``` shellsession
 App got SIGTERM 15, going to exit
-error: Recipe `sigterm-test` failed on line 35 with exit code 143
 ```
 
 Now do the same test with `SIGINT` and you can confirm that it won't

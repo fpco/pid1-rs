@@ -21,8 +21,6 @@ pub enum Error {
     /// Failed when respawning of non-PID1 child process
     #[error("Failed when respawning non-PID1 child process: {0}")]
     SpawnChild(std::io::Error),
-    #[error("Failed when spawning shutdown child process {0}")]
-    SpawnShutdownChild(std::io::Error),
 }
 
 #[allow(clippy::needless_doctest_main)]
@@ -109,9 +107,8 @@ fn gracefull_exit(settings: Pid1Settings, signal: c_int, child_pid: i32) -> Resu
     let _ = kill(Pid::from_raw(child_pid), Some(nix::sys::signal::SIGTERM));
     std::thread::sleep(settings.timeout);
 
-    // Okay, some children are still present. Use the SIGKILL card.
+    // Okay, the children is still present. Use the SIGKILL card.
     let _ = kill(Pid::from_raw(child_pid), Some(nix::sys::signal::SIGKILL));
-    std::thread::sleep(settings.timeout);
     Ok(())
 }
 
@@ -124,12 +121,22 @@ fn pid1_handling(settings: Pid1Settings, child: Child) -> ! {
         exit_code: i32,
     }
 
+    enum ShutdownThreadStatus {
+        Triggered,
+        NotTriggered,
+    }
+
+    let mut shutdown_thread = ShutdownThreadStatus::NotTriggered;
+
     loop {
         for signal in signals.forever() {
             if signal == SIGTERM || signal == SIGINT {
-                // We also do graceful exit in a separate thread so that
+                // We do graceful exit in a separate thread so that
                 // pid1 exits as soon as possible
-                let _ = std::thread::spawn(move || gracefull_exit(settings, signal, child));
+                if let ShutdownThreadStatus::NotTriggered = shutdown_thread {
+                    shutdown_thread = ShutdownThreadStatus::Triggered;
+                    let _ = std::thread::spawn(move || gracefull_exit(settings, signal, child));
+                }
                 // We do not exit here since we want the SIGCHLD
                 // handler to be invoked appropriately.
             }
