@@ -131,7 +131,7 @@ fn pid1_handling(settings: Pid1Settings, child: Option<Child>) -> ! {
 
                 // We do graceful exit in a separate thread so that
                 // pid1 exits as soon as possible
-                std::thread::spawn(move || gracefull_exit(settings.clone()));
+                std::thread::spawn(move || gracefull_exit(settings));
                 std::process::exit(exit_code);
             }
             if signal == SIGCHLD {
@@ -164,7 +164,7 @@ fn pid1_handling(settings: Pid1Settings, child: Option<Child>) -> ! {
                     if child_pid == child {
                         // We do graceful exit in a separate thread so that
                         // pid1 exits as soon as possible
-                        std::thread::spawn(move || gracefull_exit(settings.clone()));
+                        std::thread::spawn(move || gracefull_exit(settings));
                         // Propagate child exit status code
                         std::process::exit(child_exit_status.exit_code);
                     }
