@@ -20,6 +20,8 @@ pub enum Error {
     /// Failed when respawning of non-PID1 child process
     #[error("Failed when respawning non-PID1 child process: {0}")]
     SpawnChild(std::io::Error),
+    #[error("Failed when spawning shutdown child process {0}")]
+    SpawnShutdownChild(std::io::Error),
 }
 
 #[allow(clippy::needless_doctest_main)]
@@ -95,7 +97,7 @@ fn relaunch() -> Result<Child, Error> {
 }
 
 #[cfg(target_family = "unix")]
-fn gracefull_exit(settings: Pid1Settings) {
+fn gracefull_exit(settings: Pid1Settings) -> Result<(), Error> {
     // Send SIGTERM to all the processes with pid > 1
     let _ = kill(Pid::from_raw(-1), Some(nix::sys::signal::SIGTERM));
     std::thread::sleep(settings.timeout);
@@ -103,6 +105,7 @@ fn gracefull_exit(settings: Pid1Settings) {
     // Okay, some children are still present. Use the SIGKILL card.
     let _ = kill(Pid::from_raw(-1), Some(nix::sys::signal::SIGKILL));
     std::thread::sleep(settings.timeout);
+    Ok(())
 }
 
 #[cfg(target_family = "unix")]
@@ -131,7 +134,10 @@ fn pid1_handling(settings: Pid1Settings, child: Option<Child>) -> ! {
 
                 // We do graceful exit in a separate thread so that
                 // pid1 exits as soon as possible
-                std::thread::spawn(move || gracefull_exit(settings));
+                let _ = std::thread::spawn(move || gracefull_exit(settings))
+                    .join()
+                    .expect("Couldn't join on the shutdown thread");
+
                 std::process::exit(exit_code);
             }
             if signal == SIGCHLD {
@@ -164,7 +170,9 @@ fn pid1_handling(settings: Pid1Settings, child: Option<Child>) -> ! {
                     if child_pid == child {
                         // We do graceful exit in a separate thread so that
                         // pid1 exits as soon as possible
-                        std::thread::spawn(move || gracefull_exit(settings));
+                        let _ = std::thread::spawn(move || gracefull_exit(settings))
+                            .join()
+                            .expect("Couldn't join on the shutdown thread");
                         // Propagate child exit status code
                         std::process::exit(child_exit_status.exit_code);
                     }
