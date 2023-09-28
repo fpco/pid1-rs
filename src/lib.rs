@@ -22,16 +22,17 @@ pub enum Error {
     SpawnChild(std::io::Error),
 }
 
+#[allow(clippy::needless_doctest_main)]
 /// When run as PID 1, relaunch the current process as a child process
 /// and do proper signal and zombie reaping in PID 1.
 ///
 /// This function should be the first statement within your main
 /// function.
-/// # Example
 ///
-/// ```
-/// fn main()
-/// {
+/// # Examples
+///
+/// ```rust,no_test
+/// fn main() {
 ///    pid1::relaunch_if_pid1().expect("Relaunch failed");
 ///    println!("Hello world");
 ///    // Rest of the logic
