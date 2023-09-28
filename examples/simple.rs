@@ -3,7 +3,10 @@ use std::time::Duration;
 use pid1::Pid1Settings;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    pid1::relaunch_if_pid1(Pid1Settings { log: true, timeout: Duration::from_secs(2)  })?;
+    pid1::relaunch_if_pid1(Pid1Settings {
+        log: true,
+        timeout: Duration::from_secs(2),
+    })?;
     let id = std::process::id();
     println!("In the simple process, going to sleep. Process ID is {id}");
     let args = std::env::args().collect::<Vec<_>>();
