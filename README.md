@@ -23,7 +23,8 @@ fn main()
 }
 ```
 
-You can also see various example usages [here.](./examples/)
+You can also see various example usages [here.](./examples/) This function is
+meant only for Unix systems and is a no-op in Windows.
 
 ## Development
 
