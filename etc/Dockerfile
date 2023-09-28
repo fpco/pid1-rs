@@ -1,11 +1,13 @@
 FROM alpine
 
-RUN apk update && apk add gcc musl-dev procps
+RUN apk update && apk add coreutils procps
 
 COPY simple /simple
 
-COPY zombie.c /zombie.c
+COPY zombie /usr/bin/zombie
 
-RUN gcc /zombie.c
+COPY sigterm_handler /usr/bin/sigterm_handler
+
+COPY sigterm_loop /usr/bin/sigterm_loop
 
 CMD ["/simple"]
