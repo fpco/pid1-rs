@@ -12,7 +12,6 @@ use signal_hook::{
 use std::ffi::c_int;
 #[cfg(target_family = "unix")]
 use std::process::Child;
-#[cfg(target_family = "unix")]
 use std::time::Duration;
 
 /// The `Error` enum indicates that the [`relaunch_if_pid1`] was not
