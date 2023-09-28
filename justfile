@@ -29,7 +29,7 @@ test: build-image
 	docker rm pid1rs || exit 0
 	docker run --name pid1rs -t pid1rstest
 
-# Run test image
+# Run SIGTERM test
 sigterm-test:
 	docker rm pid1rs || exit 0
 	docker run --name pid1rs -t pid1rstest sigterm_handler
@@ -38,11 +38,10 @@ sigterm-test:
 send-sigterm:
 	docker exec -it pid1rs kill 1
 
-# Run test image
+# Run SIGTERM loop test
 sigloop-test:
 	docker rm pid1rs || exit 0
 	docker run --name pid1rs -t pid1rstest sigterm_loop
-
 
 # Exec into that docker container
 exec-shell:
