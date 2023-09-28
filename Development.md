@@ -83,7 +83,8 @@ Process ID is 9
 Parent process: going to sleep and exit
 ```
 
-You could see the following logs on the `simple` process:
+You could see the following logs on the `simple` process about a
+process being reaped
 
 ``` shellsession
 ...

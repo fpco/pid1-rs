@@ -46,7 +46,7 @@ pub fn relaunch_if_pid1(option: Pid1Settings) -> Result<(), Error> {
         if option.log {
             eprintln!("pid1-rs: Process running as PID 1");
         }
-        pid1_handling(&option, Some(child))
+        pid1_handling(option, Some(child))
     } else {
         if option.log {
             eprintln!("pid1-rs: Process not running as Pid 1: PID {pid}");
@@ -95,13 +95,7 @@ fn relaunch() -> Result<Child, Error> {
 }
 
 #[cfg(target_family = "unix")]
-fn gracefull_exit(settings: &Pid1Settings, child_pid: Option<u32>) {
-    // Send SIGTERM to the child
-    if let Some(child_pid) = child_pid {
-        let child_pid = Pid::from_raw(child_pid as i32);
-        let _ = kill(child_pid, Some(nix::sys::signal::SIGTERM));
-        std::thread::sleep(settings.timeout);
-    }
+fn gracefull_exit(settings: Pid1Settings) {
     // Send SIGTERM to all the processes with pid > 1
     let _ = kill(Pid::from_raw(-1), Some(nix::sys::signal::SIGTERM));
     std::thread::sleep(settings.timeout);
@@ -112,7 +106,7 @@ fn gracefull_exit(settings: &Pid1Settings, child_pid: Option<u32>) {
 }
 
 #[cfg(target_family = "unix")]
-fn pid1_handling(settings: &Pid1Settings, child: Option<Child>) -> ! {
+fn pid1_handling(settings: Pid1Settings, child: Option<Child>) -> ! {
     let mut signals = Signals::new([SIGTERM, SIGINT, SIGCHLD]).unwrap();
     let child = child.map(|x| x.id());
     struct ProcessStatus {
@@ -124,7 +118,20 @@ fn pid1_handling(settings: &Pid1Settings, child: Option<Child>) -> ! {
         for signal in signals.forever() {
             if signal == SIGTERM || signal == SIGINT {
                 let exit_code = signal + 128;
-                gracefull_exit(settings, child);
+
+                // Forward appropriate signal to the application
+                if let Some(child_pid) = child {
+                    let nix_signal = if signal == SIGTERM {
+                        nix::sys::signal::SIGTERM
+                    } else {
+                        nix::sys::signal::SIGINT
+                    };
+                    let _ = kill(Pid::from_raw(child_pid as i32), Some(nix_signal));
+                }
+
+                // We do graceful exit in a separate thread so that
+                // pid1 exits as soon as possible
+                std::thread::spawn(move || gracefull_exit(settings.clone()));
                 std::process::exit(exit_code);
             }
             if signal == SIGCHLD {
@@ -155,7 +162,9 @@ fn pid1_handling(settings: &Pid1Settings, child: Option<Child>) -> ! {
                     let child_pid = child_exit_status.pid;
                     let child_pid = u32::try_from(child_pid.as_raw()).ok()?;
                     if child_pid == child {
-                        gracefull_exit(settings, None);
+                        // We do graceful exit in a separate thread so that
+                        // pid1 exits as soon as possible
+                        std::thread::spawn(move || gracefull_exit(settings.clone()));
                         // Propagate child exit status code
                         std::process::exit(child_exit_status.exit_code);
                     }
