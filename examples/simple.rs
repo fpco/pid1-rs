@@ -1,14 +1,12 @@
 use std::time::Duration;
 
-use pid1::Builder;
+use pid1::Pid1Settings;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut builder = Builder::new();
-    let builder = builder
-        .timeout(Duration::from_secs(2))
+    Pid1Settings::new()
         .enable_log(true)
-        .build();
-    pid1::relaunch_if_pid1(builder)?;
+        .timeout(Duration::from_secs(2))
+        .launch()?;
     let id = std::process::id();
     println!("In the simple process, going to sleep. Process ID is {id}");
     let args = std::env::args().collect::<Vec<_>>();

@@ -11,21 +11,19 @@ your container, you can directly use this crate.
 
 ## Usage
 
-You need to ensure that the function `relaunch_if_pid1` should be the
+You need to ensure that the method `launch` should be the
 initial statement within your `main` function:
 
 ``` rust
 use std::time::Duration;
-use pid1::Builder;
+use pid1::Pid1Settings;
 
-fn main()
-{
-    let mut builder = Builder::new();
-    let builder = builder
-        .timeout(Duration::from_secs(2))
+fn main() {
+    Pid1Settings::new()
         .enable_log(true)
-        .build();
-    pid1::relaunch_if_pid1(builder)?;
+        .timeout(Duration::from_secs(2))
+        .launch()
+        .expect("Launch failed");
     println!("Hello world");
     // Rest of the logic...
 }
