@@ -23,44 +23,14 @@ pub enum Error {
     SpawnChild(std::io::Error),
 }
 
-#[allow(clippy::needless_doctest_main)]
-/// When run as PID 1, relaunch the current process as a child process
-/// and do proper signal and zombie reaping in PID 1.
-///
-/// This function should be the first statement within your main
-/// function.
-///
-/// # Examples
-///
-/// ```rust,no_test
-/// fn main() {
-///    pid1::relaunch_if_pid1().expect("Relaunch failed");
-///    println!("Hello world");
-///    // Rest of the logic
-/// }
-/// ```
+/// Relaunch process as PID with default value of [`Pid1Settings`]
 #[cfg(target_family = "unix")]
-pub fn relaunch_if_pid1(option: Pid1Settings) -> Result<(), Error> {
-    let pid = std::process::id();
-    if pid == 1 {
-        let child = relaunch()?;
-        if option.log {
-            eprintln!("pid1-rs: Process running as PID 1");
-        }
-        pid1_handling(option, child)
-    } else {
-        if option.log {
-            eprintln!("pid1-rs: Process not running as Pid 1: PID {pid}");
-        }
-        Ok(())
-    }
+pub fn relaunch_if_pid1() -> Result<(), Error> {
+    Pid1Settings::default().launch()
 }
 
 #[cfg(target_family = "windows")]
-pub fn relaunch_if_pid1(option: Pid1Settings) -> Result<(), Error> {
-    if option.log {
-        eprintln!("pid1-rs: PID1 capability not supported for Windows");
-    }
+pub fn relaunch_if_pid1() -> Result<(), Error> {
     Ok(())
 }
 
@@ -68,12 +38,76 @@ pub fn relaunch_if_pid1(option: Pid1Settings) -> Result<(), Error> {
 /// doesn't log and has a timeout of 2 seconds.
 #[derive(Debug, Copy, Clone)]
 pub struct Pid1Settings {
-    /// Should the crate log to [`std::io::Stderr`]. This can be useful
-    /// to detect if it is running with PID 1. By default it is 'false'
-    pub log: bool,
-    /// Duration to wait for all the child process to exit. By default
-    /// it is 2 seconds.
-    pub timeout: Duration,
+    log: bool,
+    timeout: Duration,
+}
+
+impl Pid1Settings {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Should the crate log to [`std::io::Stderr`]. This can be
+    /// useful to detect whether it is running with PID 1. By default
+    /// it is 'false'.
+    pub fn enable_log(&mut self, enable_log: bool) -> &mut Self {
+        self.log = enable_log;
+        self
+    }
+
+    /// Duration to wait for the child process to exit. By default it
+    /// is 2 seconds.
+    pub fn timeout(&mut self, timeout: Duration) -> &mut Self {
+        self.timeout = timeout;
+        self
+    }
+
+    #[allow(clippy::needless_doctest_main)]
+    /// When run as PID 1, relaunch the current process as a child process
+    /// and do proper signal and zombie reaping in PID 1.
+    ///
+    /// This function should be the first statement within your main
+    /// function.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_test
+    /// use std::time::Duration;
+    /// use pid1::Pid1Settings;
+    ///
+    /// fn main() {
+    ///     Pid1Settings::new()
+    ///         .enable_log(true)
+    ///         .timeout(Duration::from_secs(2))
+    ///         .launch()
+    ///         .expect("Launch failed");
+    ///     println!("Hello world");
+    ///     // Rest of the logic...
+    /// }
+    /// ```
+    #[cfg(target_family = "unix")]
+    pub fn launch(self) -> Result<(), Error> {
+        let pid = std::process::id();
+        if pid == 1 {
+            let child = relaunch()?;
+            if self.log {
+                eprintln!("pid1-rs: Process running as PID 1");
+            }
+            pid1_handling(self, child)
+        } else {
+            if self.log {
+                eprintln!("pid1-rs: Process not running as Pid 1: PID {pid}");
+            }
+            Ok(())
+        }
+    }
+    #[cfg(target_family = "windows")]
+    pub fn launch(self) -> Result<(), Error> {
+        if self.log {
+            eprintln!("pid1-rs: PID1 capability not supported for Windows");
+        }
+        Ok(())
+    }
 }
 
 impl Default for Pid1Settings {
@@ -103,11 +137,11 @@ fn gracefull_exit(settings: Pid1Settings, signal: c_int, child_pid: i32) -> Resu
         let _ = kill(Pid::from_raw(child_pid), Some(nix::sys::signal::SIGINT));
         std::thread::sleep(settings.timeout);
     }
-    // Send SIGTERM to all the processes with pid > 1
+    // Send SIGTERM to the child process
     let _ = kill(Pid::from_raw(child_pid), Some(nix::sys::signal::SIGTERM));
     std::thread::sleep(settings.timeout);
 
-    // Okay, the children is still present. Use the SIGKILL card.
+    // Okay, the child process is still present. Use the SIGKILL card.
     let _ = kill(Pid::from_raw(child_pid), Some(nix::sys::signal::SIGKILL));
     Ok(())
 }
@@ -167,11 +201,10 @@ fn pid1_handling(settings: Pid1Settings, child: Child) -> ! {
                     let child_pid = child_process.pid;
                     let child_pid = child_pid.as_raw();
                     if child_pid == child {
-                        // At the point, there could be other
+                        // At this point, there could be other
                         // processes running. But once the main
                         // process dies, everything else is guaranteed
-                        // to die. So we just exit here.
-                        // Propagate child exit status code
+                        // to die. So we just exit here with the child's exit status code
                         std::process::exit(child_process.exit_code);
                     }
                     if settings.log {

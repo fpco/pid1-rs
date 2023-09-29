@@ -6,11 +6,11 @@ use signal_hook::iterator::Signals;
 
 // This program handles sigterm and exits
 fn main() {
-    pid1::relaunch_if_pid1(Pid1Settings {
-        log: true,
-        timeout: Duration::from_secs(2),
-    })
-    .expect("Relaunch failed");
+    Pid1Settings::new()
+        .enable_log(true)
+        .timeout(Duration::from_secs(2))
+        .launch()
+        .expect("Launch failed");
     println!("This APP cannot be killed by SIGTERM (15)");
     let mut signals = Signals::new([SIGTERM]).unwrap();
     for signal in signals.forever() {

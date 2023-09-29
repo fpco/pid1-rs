@@ -11,13 +11,19 @@ your container, you can directly use this crate.
 
 ## Usage
 
-You need to ensure that the function `relaunch_if_pid1` should be the
-first statement within your `main` function:
+You need to ensure that the method `launch` should be the
+initial statement within your `main` function:
 
 ``` rust
-fn main()
-{
-    pid1::relaunch_if_pid1().expect("Relaunch failed");
+use std::time::Duration;
+use pid1::Pid1Settings;
+
+fn main() {
+    Pid1Settings::new()
+        .enable_log(true)
+        .timeout(Duration::from_secs(2))
+        .launch()
+        .expect("Launch failed");
     println!("Hello world");
     // Rest of the logic...
 }
