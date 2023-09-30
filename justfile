@@ -10,5 +10,16 @@ build-release-binary:
 test: build-release-binary
 	cp target/x86_64-unknown-linux-musl/release/pid1 ./init/etc/
 	cd init/etc && docker build . -f Dockerfile --tag pid1runner
-	-docker rm pid
+
+# Test docker image
+test-init-image:
 	docker run --rm --name pid --tty pid1runner ps aux
+	docker run --rm --name pid --tty pid1runner ls
+	docker run --rm --name pid --tty pid1runner ls /
+	docker run --rm --name pid --tty pid1runner id
+	docker run --rm --name pid --entrypoint pid1 --workdir=/home --tty pid1runner pwd
+	docker run --rm --name pid --entrypoint pid1 --env=HELLO=WORLD --tty pid1runner printenv HELLO
+
+# Exec init image
+exec-init-image:
+	docker run --rm --name pid --tty --interactive pid1runner sh

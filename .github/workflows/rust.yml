@@ -53,7 +53,8 @@ jobs:
       run: cargo build
     - name: Run tests
       run: |
-        just build-release-binary
+        just test
+        just test-init-image
         cd pid1 && just test
       if: runner.os == 'Linux'
     - name: clippy

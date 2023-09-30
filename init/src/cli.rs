@@ -381,10 +381,17 @@ pub(crate) fn handle_arg(arg: Args) {
         let status = nix::unistd::execvp(&exec_params.path, &exec_params.args[..]);
         eprintln!("Impossible: execvp failed with: {status:?}");
     } else {
-        let child = std::process::Command::new(child_process)
+        let child = std::process::Command::new(&child_process)
             .args(&arg.child_args[1..])
-            .spawn()
-            .expect("Spawn failed");
+            .spawn();
+        let child = match child {
+            Ok(child) => child,
+            Err(err) => {
+                eprintln!("pid1: {child_process:?} does not exist. Got error: {err}");
+                std::process::exit(1);
+            }
+        };
+
         Pid1Settings::new()
             .enable_log(arg.verbose)
             .timeout(Duration::from_secs(arg.timeout.into()))
