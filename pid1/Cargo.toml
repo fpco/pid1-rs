@@ -3,6 +3,12 @@ name = "pid1"
 version = "0.1.0"
 edition = "2021"
 readme = "../README.md"
+homepage = "https://github.com/fpco/amber"
+repository = "https://github.com/fpco/amber"
+license = "MIT"
+description = "pid1 handling library for proper signal and zombie reaping of the PID1 process"
+keywords = ["init", "pid1", "process", "cli"]
+categories = ["command-line-utilities"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

@@ -52,7 +52,9 @@ jobs:
     - name: Build
       run: cargo build
     - name: Run tests
-      run: just test
+      run: |
+        just build-release-binary
+        cd pid1 && just test
       if: runner.os == 'Linux'
     - name: clippy
       run: cargo clippy -- --deny "warnings"
