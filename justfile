@@ -11,4 +11,4 @@ test: build-release-binary
 	cp target/x86_64-unknown-linux-musl/release/pid1 ./init/etc/
 	cd init/etc && docker build . -f Dockerfile --tag pid1runner
 	-docker rm pid
-	docker run --rm --name pid --tty pid1runner ls
+	docker run --rm --name pid --tty pid1runner ps aux
