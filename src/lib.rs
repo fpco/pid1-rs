@@ -108,6 +108,12 @@ impl Pid1Settings {
         }
         Ok(())
     }
+
+    /// Do proper reaping and signal handling on the [`Child`] process
+    #[cfg(target_family = "unix")]
+    pub fn pid1_handling(self, child: Child) -> ! {
+        pid1_handling(self, child)
+    }
 }
 
 impl Default for Pid1Settings {
