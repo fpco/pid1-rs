@@ -8,7 +8,7 @@ build-release-binary:
 
 # Build test container
 test: build-release-binary
-	cp target/x86_64-unknown-linux-musl/release/pid1 ./init/etc/
+	cp target/x86_64-unknown-linux-musl/release/pid1 ./pid1-exe/etc/
 	cd init/etc && docker build . -f Dockerfile --tag pid1runner
 
 # Test docker image
