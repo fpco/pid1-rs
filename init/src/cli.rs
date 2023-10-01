@@ -1,6 +1,8 @@
+#[cfg(target_family = "unix")]
+use std::os::unix::process::CommandExt;
 use std::{
     collections::HashMap,
-    ffi::{CString, NulError, OsStr, OsString},
+    ffi::{OsStr, OsString},
     path::PathBuf,
     time::Duration,
 };
@@ -327,21 +329,6 @@ fn print_help(exit_code: i32) -> ! {
     std::process::exit(exit_code);
 }
 
-struct ExecParams {
-    path: CString,
-    args: Vec<CString>,
-}
-
-fn to_exec_params(path: String, args: Vec<String>) -> Result<ExecParams, NulError> {
-    let path = CString::new(path)?;
-    let args = args
-        .into_iter()
-        .map(CString::new)
-        .collect::<Result<Vec<CString>, NulError>>();
-    let args = args?;
-    Ok(ExecParams { path, args })
-}
-
 pub(crate) fn handle_arg(arg: Args) {
     if arg.show_help {
         print_help(0);
@@ -351,43 +338,33 @@ pub(crate) fn handle_arg(arg: Args) {
         None => print_help(0),
     };
 
-    if let Some(workdir) = arg.workdir {
-        let result = std::env::set_current_dir(&workdir);
-        if let Err(error) = result {
-            eprintln!(
-                "Failed changing current working dir to {workdir:?} with {:?}",
-                error.raw_os_error()
-            );
-            std::process::exit(1);
-        }
+    let mut child = std::process::Command::new(&child_process);
+    let child = child.args(&arg.child_args[1..]);
+
+    if let Some(workdir) = &arg.workdir {
+        child.current_dir(workdir);
     }
 
     for (key, value) in arg.override_env {
-        std::env::set_var(key, value);
+        child.env(key, value);
     }
 
     let pid = std::process::id();
     if pid != 1 {
-        // todo: fix env
-        let exec_params = to_exec_params(child_process, arg.child_args);
-        let exec_params = match exec_params {
-            Ok(exec_params) => exec_params,
-            Err(nul_error) => {
-                eprintln!("Error while marshaling. Got error: {nul_error}");
-                std::process::exit(1);
-            }
-        };
+        #[cfg(target_family = "unix")]
+        let status = child.exec();
+        #[cfg(target_family = "unix")]
+        eprintln!("execvp failed with: {status:?}");
+        #[cfg(target_family = "windows")]
+        eprintln!("execvp not supported on windows");
 
-        let status = nix::unistd::execvp(&exec_params.path, &exec_params.args[..]);
-        eprintln!("Impossible: execvp failed with: {status:?}");
+        std::process::exit(1);
     } else {
-        let child = std::process::Command::new(&child_process)
-            .args(&arg.child_args[1..])
-            .spawn();
+        let child = child.spawn();
         let child = match child {
             Ok(child) => child,
             Err(err) => {
-                eprintln!("pid1: {child_process:?} does not exist. Got error: {err}");
+                eprintln!("pid1: {child_process:?} spawn failed. Got error: {err}");
                 std::process::exit(1);
             }
         };
