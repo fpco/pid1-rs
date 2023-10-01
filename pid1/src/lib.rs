@@ -10,7 +10,6 @@ use signal_hook::{
 };
 #[cfg(target_family = "unix")]
 use std::ffi::c_int;
-#[cfg(target_family = "unix")]
 use std::process::Child;
 use std::time::Duration;
 
@@ -85,6 +84,9 @@ impl Pid1Settings {
     ///     // Rest of the logic...
     /// }
     /// ```
+    ///
+    /// Note that this function is only applicable for Unix
+    /// systems. For Windows, it will return [`Ok(())`].
     #[cfg(target_family = "unix")]
     pub fn launch(self) -> Result<(), Error> {
         let pid = std::process::id();
@@ -107,6 +109,22 @@ impl Pid1Settings {
             eprintln!("pid1-rs: PID1 capability not supported for Windows");
         }
         Ok(())
+    }
+
+    /// Do proper reaping and signal handling on the [`Child`]
+    /// process. This is only applicable for Unix systems. For
+    /// Windows, this will terminate the current process with exit
+    /// code 1.
+    #[cfg(target_family = "unix")]
+    pub fn pid1_handling(self, child: Child) -> ! {
+        pid1_handling(self, child)
+    }
+    #[cfg(target_family = "windows")]
+    pub fn pid1_handling(self, _child: Child) -> ! {
+        if self.log {
+            eprintln!("pid1-rs: PID1 capability not supported for Windows");
+        }
+        std::process::exit(1);
     }
 }
 

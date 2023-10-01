@@ -2,47 +2,24 @@
 default:
 	just --list --unsorted
 
-# Build image
-build-image:
-	cargo build --target x86_64-unknown-linux-musl --example simple
-	cargo build --target x86_64-unknown-linux-musl --example zombie
-	cargo build --target x86_64-unknown-linux-musl --example sigterm_handler
-	cargo build --target x86_64-unknown-linux-musl --example sigterm_loop
+# Build pid binary
+build-release-binary:
+	cargo build --target x86_64-unknown-linux-musl --release
 
-	cp target/x86_64-unknown-linux-musl/debug/examples/simple etc
-	cp target/x86_64-unknown-linux-musl/debug/examples/zombie etc
-	cp target/x86_64-unknown-linux-musl/debug/examples/sigterm_handler etc
-	cp target/x86_64-unknown-linux-musl/debug/examples/sigterm_loop etc
-	docker build etc -f etc/Dockerfile --tag pid1rstest
+# Build test container
+test: build-release-binary
+	cp target/x86_64-unknown-linux-musl/release/pid1 ./pid1-exe/etc/
+	cd pid1-exe/etc && docker build . -f Dockerfile --tag pid1runner
 
-# Run test image
-run-image:
-	docker rm pid1rs || exit 0
-	docker run --name pid1rs -t pid1rstest /simple --sleep
+# Test docker image
+test-init-image:
+	docker run --rm --name pid --tty pid1runner ps aux
+	docker run --rm --name pid --tty pid1runner ls
+	docker run --rm --name pid --tty pid1runner ls /
+	docker run --rm --name pid --tty pid1runner id
+	docker run --rm --name pid --entrypoint pid1 --workdir=/home --tty pid1runner pwd
+	docker run --rm --name pid --entrypoint pid1 --env=HELLO=WORLD --tty pid1runner printenv HELLO
 
-# Run zombie in the container
-run-zombie:
-	docker exec -t pid1rs zombie
-
-# Test
-test: build-image
-	docker rm pid1rs || exit 0
-	docker run --name pid1rs -t pid1rstest
-
-# Run SIGTERM test
-sigterm-test:
-	docker rm pid1rs || exit 0
-	docker run --name pid1rs -t pid1rstest sigterm_handler
-
-# Send SIGTERM to container
-send-sigterm:
-	docker exec -it pid1rs kill 1
-
-# Run SIGTERM loop test
-sigloop-test:
-	docker rm pid1rs || exit 0
-	docker run --name pid1rs -t pid1rstest sigterm_loop
-
-# Exec into that docker container
-exec-shell:
-	docker exec -it pid1rs sh
+# Exec init image
+exec-init-image:
+	docker run --rm --name pid --tty --interactive pid1runner sh
