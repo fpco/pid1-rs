@@ -9,10 +9,10 @@ build-image:
 	cargo build --target x86_64-unknown-linux-musl --example sigterm_handler
 	cargo build --target x86_64-unknown-linux-musl --example sigterm_loop
 
-	cp target/x86_64-unknown-linux-musl/debug/examples/simple etc
-	cp target/x86_64-unknown-linux-musl/debug/examples/zombie etc
-	cp target/x86_64-unknown-linux-musl/debug/examples/sigterm_handler etc
-	cp target/x86_64-unknown-linux-musl/debug/examples/sigterm_loop etc
+	cp ../target/x86_64-unknown-linux-musl/debug/examples/simple etc
+	cp ../target/x86_64-unknown-linux-musl/debug/examples/zombie etc
+	cp ../target/x86_64-unknown-linux-musl/debug/examples/sigterm_handler etc
+	cp ../target/x86_64-unknown-linux-musl/debug/examples/sigterm_loop etc
 	docker build etc -f etc/Dockerfile --tag pid1rstest
 
 # Run test image
