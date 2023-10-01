@@ -36,13 +36,11 @@ jobs:
     - uses: extractions/setup-just@v1
       with:
         just-version: 1.10.0
-    - uses: actions-rs/toolchain@v1
+    - uses: dtolnay/rust-toolchain@master
       with:
         toolchain: ${{ matrix.toolchain }}
-        profile: minimal
-        override: true
         components: rustfmt, clippy
-        target: x86_64-unknown-linux-musl
+        targets: x86_64-unknown-linux-musl
     - uses: Swatinem/rust-cache@v2
       with:
         key: ${{ runner.os }}-${{ hashFiles('Cargo.toml') }}-${{ matrix.toolchain }}
@@ -54,7 +52,7 @@ jobs:
     - name: Run tests
       run: |
         just test
-        # just test-init-image
+        just test-init-image
         cd pid1 && just test
       if: runner.os == 'Linux'
     - name: clippy
