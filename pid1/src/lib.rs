@@ -114,6 +114,13 @@ impl Pid1Settings {
     pub fn pid1_handling(self, child: Child) -> ! {
         pid1_handling(self, child)
     }
+    #[cfg(target_family = "windows")]
+    pub fn pid1_handling(self, _child: Child) -> ! {
+        if self.log {
+            eprintln!("pid1-rs: PID1 capability not supported for Windows");
+        }
+        std::process::exit(1);
+    }
 }
 
 impl Default for Pid1Settings {
