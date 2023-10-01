@@ -7,7 +7,7 @@ process.
 
 This repository consists of two packages:
 - [pid1](./pid1/) crate: Library meant to be used by your Rust applications.
-- [init](./init) crate: Binary which internally uses pid1 crate used for
+- [pid1-exe](./pid1-exe) crate: Binary which internally uses pid1 crate used for
   container deployments. The binary name is `pid1`.
 
 ## pid1 Library Usage
