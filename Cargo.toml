@@ -1,7 +1,7 @@
 [workspace]
 members = [
     "pid1",
-    "init",
+    "pid1-exe",
 ]
 
 [profile.release]

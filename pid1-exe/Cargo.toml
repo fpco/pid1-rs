@@ -1,5 +1,5 @@
 [package]
-name = "init-rs"
+name = "pid1-exe"
 version = "0.1.0"
 edition = "2021"
 readme = "../README.md"
@@ -9,7 +9,6 @@ readme = "../README.md"
 [dependencies]
 pid1 = { path = "../pid1"}
 clap_lex = "0.5.1"
-nix = {version = "0.27.1", features = ["process"]}
 
 [[bin]]
 name = "pid1"
