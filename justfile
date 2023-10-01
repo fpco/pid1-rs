@@ -18,7 +18,7 @@ test-init-image:
 	docker run --rm --name pid --tty pid1runner ls /
 	docker run --rm --name pid --tty pid1runner id
 	docker run --rm --name pid --entrypoint pid1 --workdir=/home --tty pid1runner pwd
-	docker run --rm --name pid --entrypoint pid1 --env=HELLO=WORLD --tty pid1runner printenv HELLO
+	docker run --rm --name pid --entrypoint pid1 --env HELLO=WORLD --env=FOO=BYE --tty pid1runner printenv HELLO FOO
 
 # Exec init image
 exec-init-image:

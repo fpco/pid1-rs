@@ -8,7 +8,7 @@ readme = "../README.md"
 
 [dependencies]
 pid1 = { path = "../pid1"}
-clap_lex = "0.5.1"
+clap = { version = "4.4.6", default-features = false, features = ["std", "derive", "help"]}
 
 [[bin]]
 name = "pid1"
