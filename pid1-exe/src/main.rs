@@ -1,20 +1,10 @@
 mod cli;
 
-use std::env::args_os;
+use clap::Parser;
 
-use cli::{handle_arg, parse_args};
+use crate::cli::Pid1App;
 
 fn main() {
-    let args: Vec<_> = args_os().skip(1).collect();
-
-    let pid1_arg = parse_args(args);
-    match pid1_arg {
-        Ok(pid1_arg) => {
-            handle_arg(pid1_arg);
-        }
-        Err(err) => {
-            eprintln!("{err}");
-            std::process::exit(1);
-        }
-    };
+    let cli = Pid1App::parse();
+    cli.run()
 }

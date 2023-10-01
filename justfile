@@ -13,12 +13,12 @@ test: build-release-binary
 
 # Test docker image
 test-init-image:
-	docker run --rm --name pid --tty pid1runner ps aux
-	docker run --rm --name pid --tty pid1runner ls
-	docker run --rm --name pid --tty pid1runner ls /
-	docker run --rm --name pid --tty pid1runner id
-	docker run --rm --name pid --entrypoint pid1 --workdir=/home --tty pid1runner pwd
-	docker run --rm --name pid --entrypoint pid1 --env=HELLO=WORLD --tty pid1runner printenv HELLO
+	docker run --rm --name pid --interactive pid1runner ps aux
+	docker run --rm --name pid --interactive pid1runner ls
+	docker run --rm --name pid --interactive pid1runner ls /
+	docker run --rm --name pid --interactive pid1runner id
+	docker run --rm --name pid --interactive pid1runner --workdir=/home  pwd
+	docker run --rm --name pid --interactive pid1runner --env HELLO=WORLD --env=FOO=BYE printenv HELLO FOO
 
 # Exec init image
 exec-init-image:
