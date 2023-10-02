@@ -1,4 +1,4 @@
-FROM alpine:3.18.4
+FROM ubuntu:22.04
 
 COPY pid1 /usr/bin/pid1
 
