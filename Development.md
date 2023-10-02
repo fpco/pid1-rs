@@ -208,5 +208,8 @@ You will see that it would have exited:
 ``` shellsession
 App got SIGTERM 15, but will not exit
 App got SIGTERM 15, but will not exit
-error: Recipe `sigloop-test` failed on line 44 with exit code 143
+error: Recipe `sigloop-test` failed on line 44 with exit code 137
 ```
+
+You can confirm from the status code that the child process got killed
+by (137 - 128 = 9) SIGKIL as the application ignores SIGTERM.

@@ -1,9 +1,16 @@
 use clap::Parser;
 #[cfg(target_family = "unix")]
-use std::os::unix::process::CommandExt;
-use std::{error::Error, ffi::OsString, path::PathBuf, time::Duration};
-
 use pid1::Pid1Settings;
+#[cfg(target_family = "unix")]
+use signal_hook::{
+    consts::{SIGCHLD, SIGINT, SIGTERM},
+    iterator::Signals,
+};
+#[cfg(target_family = "unix")]
+use std::os::unix::process::CommandExt;
+#[cfg(target_family = "unix")]
+use std::time::Duration;
+use std::{error::Error, ffi::OsString, path::PathBuf};
 
 #[derive(Parser, Debug, PartialEq)]
 pub(crate) struct Pid1App {
@@ -25,7 +32,8 @@ pub(crate) struct Pid1App {
 }
 
 impl Pid1App {
-    pub(crate) fn run(self) {
+    #[cfg(target_family = "unix")]
+    pub(crate) fn run(self) -> ! {
         let mut child = std::process::Command::new(&self.child_process[0]);
         let child = child.args(&self.child_process[1..]);
         if let Some(workdir) = &self.workdir {
@@ -36,16 +44,13 @@ impl Pid1App {
         }
         let pid = std::process::id();
         if pid != 1 {
-            #[cfg(target_family = "unix")]
-            {
-                let status = child.exec();
-                eprintln!("execvp failed with: {status:?}");
-            }
-            #[cfg(target_family = "windows")]
-            eprintln!("execvp not supported on windows");
+            let status = child.exec();
+            eprintln!("execvp failed with: {status:?}");
 
             std::process::exit(1);
         } else {
+            // Install signal handlers before launching child process
+            let signals = Signals::new([SIGTERM, SIGINT, SIGCHLD]).unwrap();
             let child = child.spawn();
             let child = match child {
                 Ok(child) => child,
@@ -61,8 +66,14 @@ impl Pid1App {
             Pid1Settings::new()
                 .enable_log(self.verbose)
                 .timeout(Duration::from_secs(self.timeout.into()))
-                .pid1_handling(child)
+                .pid1_handling(signals, child)
         }
+    }
+
+    #[cfg(target_family = "windows")]
+    pub(crate) fn run(self) -> ! {
+        eprintln!("pid1: Not supported on Windows");
+        std::process::exit(1);
     }
 }
 

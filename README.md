@@ -7,17 +7,17 @@ process.
 
 This repository consists of two packages:
 - [pid1](./pid1/) crate: Library meant to be used by your Rust applications.
-- [pid1-exe](./pid1-exe) crate: Binary which internally uses pid1 crate used for
-  container deployments. The binary name is `pid1`.
+- [pid1-exe](./pid1-exe) crate: Binary which internally uses pid1
+  crate for container deployments. The binary name is `pid1`.
 
 ## pid1 Library Usage
 
 This library is used to simplify Rust deployment in a containerized
-environment. Instead of using something like [Haskell pid1](https://github.com/fpco/pid1-rs/actions/workflows/rust.yml)) or
-[tini](https://github.com/krallin/tini) binary in your container, you can directly use this crate.
+environment. Instead of using binaries like [Haskell's pid1](https://github.com/fpco/pid1-rs/actions/workflows/rust.yml)) or
+[tini](https://github.com/krallin/tini) in your container, you can use this crate directly.
 
-You need to ensure that the method `launch` should be the
-initial statement within your `main` function:
+You must ensure that the `launch` method is the first statement in
+your `main` function:
 
 ``` rust
 use std::time::Duration;
@@ -34,8 +34,9 @@ fn main() {
 }
 ```
 
-You can also see various example usages [here.](./examples/) This function is
-meant only for Unix systems and is a no-op in Windows.
+You can also see various example usages [here.](./examples/) This
+function is meant only for Unix systems and the above code is a no-op
+in Windows.
 
 ## Using pid1 binary
 

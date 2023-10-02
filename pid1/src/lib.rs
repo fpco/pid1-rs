@@ -10,6 +10,7 @@ use signal_hook::{
 };
 #[cfg(target_family = "unix")]
 use std::ffi::c_int;
+#[cfg(target_family = "unix")]
 use std::process::Child;
 use std::time::Duration;
 
@@ -91,11 +92,13 @@ impl Pid1Settings {
     pub fn launch(self) -> Result<(), Error> {
         let pid = std::process::id();
         if pid == 1 {
+            // Install signal handles before we launch child process
+            let signals = Signals::new([SIGTERM, SIGINT, SIGCHLD]).unwrap();
             let child = relaunch()?;
             if self.log {
                 eprintln!("pid1-rs: Process running as PID 1");
             }
-            pid1_handling(self, child)
+            pid1_handling(self, signals, child)
         } else {
             if self.log {
                 eprintln!("pid1-rs: Process not running as Pid 1: PID {pid}");
@@ -112,19 +115,10 @@ impl Pid1Settings {
     }
 
     /// Do proper reaping and signal handling on the [`Child`]
-    /// process. This is only applicable for Unix systems. For
-    /// Windows, this will terminate the current process with exit
-    /// code 1.
+    /// process. This method is only available for Unix systems.
     #[cfg(target_family = "unix")]
-    pub fn pid1_handling(self, child: Child) -> ! {
-        pid1_handling(self, child)
-    }
-    #[cfg(target_family = "windows")]
-    pub fn pid1_handling(self, _child: Child) -> ! {
-        if self.log {
-            eprintln!("pid1-rs: PID1 capability not supported for Windows");
-        }
-        std::process::exit(1);
+    pub fn pid1_handling(self, signals: Signals, child: Child) -> ! {
+        pid1_handling(self, signals, child)
     }
 }
 
@@ -165,8 +159,7 @@ fn gracefull_exit(settings: Pid1Settings, signal: c_int, child_pid: i32) -> Resu
 }
 
 #[cfg(target_family = "unix")]
-fn pid1_handling(settings: Pid1Settings, child: Child) -> ! {
-    let mut signals = Signals::new([SIGTERM, SIGINT, SIGCHLD]).unwrap();
+fn pid1_handling(settings: Pid1Settings, mut signals: Signals, child: Child) -> ! {
     let child = child.id() as i32;
     struct ProcessStatus {
         pid: Pid,
