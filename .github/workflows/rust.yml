@@ -53,7 +53,7 @@ jobs:
     - name: Run tests
       run: |
         just test
-        # just test-init-image
+        just test-init-image
         cd pid1 && just test
       if: runner.os == 'Linux'
     - name: clippy
