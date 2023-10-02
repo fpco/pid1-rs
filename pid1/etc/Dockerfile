@@ -1,6 +1,4 @@
-FROM alpine
-
-RUN apk update && apk add coreutils procps
+FROM ubuntu:22.04
 
 COPY simple /simple
 
