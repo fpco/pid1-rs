@@ -8,6 +8,7 @@ readme = "../README.md"
 
 [dependencies]
 pid1 = { path = "../pid1"}
+signal-hook = "0.3.17"
 clap = { version = "4.4.6", default-features = false, features = ["std", "derive", "help"]}
 
 [[bin]]
