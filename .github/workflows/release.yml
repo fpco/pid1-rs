@@ -44,7 +44,7 @@ jobs:
         cargo binstall cross --no-confirm
     - name: Build Musl binary
       run: just build-release-binary
-    - name: Build other binaryies
+    - name: Build other binaries
       run: just binaries true
     - name: Generate artifacts
       run: just cp-binaries
