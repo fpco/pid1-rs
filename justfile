@@ -27,24 +27,24 @@ exec-init-image:
 # Build binary for other architectures
 binaries clean='false':
 	cross build --target x86_64-unknown-linux-gnu --release
-	cross build --target aarch64-unknown-linux-gnu --release
-	cross build --target aarch64-unknown-linux-musl --release
-	cross build --target arm-unknown-linux-musleabi --release
-	cross build --target arm-unknown-linux-musleabihf --release
-	cross build --target armv5te-unknown-linux-musleabi --release
-	cross build --target armv7-unknown-linux-musleabi --release
-	cross build --target armv7-unknown-linux-musleabihf --release
-	cross build --target i586-unknown-linux-musl --release
-	cross build --target i686-unknown-linux-musl --release
 	{{clean}} && docker image rm ghcr.io/cross-rs/x86_64-unknown-linux-gnu:0.2.5
+	cross build --target aarch64-unknown-linux-gnu --release
 	{{clean}} && docker image rm ghcr.io/cross-rs/aarch64-unknown-linux-gnu:0.2.5
+	cross build --target aarch64-unknown-linux-musl --release
 	{{clean}} && docker image rm ghcr.io/cross-rs/aarch64-unknown-linux-musl:0.2.5
+	cross build --target arm-unknown-linux-musleabi --release
 	{{clean}} && docker image rm ghcr.io/cross-rs/arm-unknown-linux-musleabi:0.2.5
+	cross build --target arm-unknown-linux-musleabihf --release
 	{{clean}} && docker image rm ghcr.io/cross-rs/arm-unknown-linux-musleabihf:0.2.5
+	cross build --target armv5te-unknown-linux-musleabi --release
 	{{clean}} && docker image rm ghcr.io/cross-rs/armv5te-unknown-linux-musleabi:0.2.5
+	cross build --target armv7-unknown-linux-musleabi --release
 	{{clean}} && docker image rm ghcr.io/cross-rs/armv7-unknown-linux-musleabi:0.2.5
+	cross build --target armv7-unknown-linux-musleabihf --release
 	{{clean}} && docker image rm ghcr.io/cross-rs/armv7-unknown-linux-musleabihf:0.2.5
+	cross build --target i586-unknown-linux-musl --release
 	{{clean}} && docker image rm ghcr.io/cross-rs/i586-unknown-linux-musl:0.2.5
+	cross build --target i686-unknown-linux-musl --release
 	{{clean}} && docker image rm ghcr.io/cross-rs/i686-unknown-linux-musl:0.2.5
 	cross build --target mips64-unknown-linux-muslabi64 --release
 	cross build --target mips64el-unknown-linux-muslabi64 --release
