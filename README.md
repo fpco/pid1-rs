@@ -46,7 +46,7 @@ and use it in your container directly. Example:
 ``` dockerfile
 FROM alpine:3.14.2
 
-ADD FIXME_LINK /usr/bin/pid1
+ADD https://github.com/fpco/pid1-rs/releases/download/v0.1.0/pid1-x86_64-unknown-linux-musl /usr/bin/pid1
 
 RUN chmod +x /usr/bin/pid1
 
