@@ -83,7 +83,7 @@ dependencies = [
 
 [[package]]
 name = "pid1"
-version = "0.2.0"
+version = "0.1.1"
 dependencies = [
  "nix",
  "signal-hook",
@@ -92,7 +92,7 @@ dependencies = [
 
 [[package]]
 name = "pid1-exe"
-version = "0.2.0"
+version = "0.1.1"
 dependencies = [
  "clap",
  "pid1",
