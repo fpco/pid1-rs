@@ -13,8 +13,10 @@ This repository consists of two packages:
 ## pid1 Library Usage
 
 This library is used to simplify Rust deployment in a containerized
-environment. Instead of using binaries like [Haskell's pid1](https://github.com/fpco/pid1-rs/actions/workflows/rust.yml)) or
-[tini](https://github.com/krallin/tini) in your container, you can use this crate directly.
+environment. Instead of using binaries like [Haskell's
+pid1](https://github.com/fpco/pid1) or
+[tini](https://github.com/krallin/tini) in your container, you can use
+this crate directly.
 
 You must ensure that the `launch` method is the first statement in
 your `main` function:
