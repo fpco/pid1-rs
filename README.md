@@ -1,6 +1,13 @@
 # pid1-rs
 
+[![Crates.io][crates-badge]][crates-url]
+[![Crates.io][crates-badge-exe]][crates-url-exe]
 [![Rust](https://github.com/fpco/pid1-rs/actions/workflows/rust.yml/badge.svg)](https://github.com/fpco/pid1-rs/actions/workflows/rust.yml)
+
+[crates-badge]: https://img.shields.io/crates/v/pid1.svg
+[crates-url]: https://crates.io/crates/pid1
+[crates-badge-exe]: https://img.shields.io/crates/v/pid1-exe.svg
+[crates-url-exe]: https://crates.io/crates/pid1-exe
 
 pid1 handling library for proper signal and zombie reaping of the PID1
 process.

@@ -27,27 +27,40 @@ exec-init-image:
 # Build binary for other architectures
 binaries clean='false':
 	cross build --target x86_64-unknown-linux-gnu --release
-	{{clean}} && docker image rm ghcr.io/cross-rs/x86_64-unknown-linux-gnu:0.2.5
+	-{{clean}} && docker image rm ghcr.io/cross-rs/x86_64-unknown-linux-gnu:0.2.5
 	cross build --target aarch64-unknown-linux-gnu --release
-	{{clean}} && docker image rm ghcr.io/cross-rs/aarch64-unknown-linux-gnu:0.2.5
+	-{{clean}} && docker image rm ghcr.io/cross-rs/aarch64-unknown-linux-gnu:0.2.5
 	cross build --target aarch64-unknown-linux-musl --release
-	{{clean}} && docker image rm ghcr.io/cross-rs/aarch64-unknown-linux-musl:0.2.5
+	-{{clean}} && docker image rm ghcr.io/cross-rs/aarch64-unknown-linux-musl:0.2.5
 	cross build --target arm-unknown-linux-musleabi --release
-	{{clean}} && docker image rm ghcr.io/cross-rs/arm-unknown-linux-musleabi:0.2.5
+	-{{clean}} && docker image rm ghcr.io/cross-rs/arm-unknown-linux-musleabi:0.2.5
 	cross build --target arm-unknown-linux-musleabihf --release
-	{{clean}} && docker image rm ghcr.io/cross-rs/arm-unknown-linux-musleabihf:0.2.5
+	-{{clean}} && docker image rm ghcr.io/cross-rs/arm-unknown-linux-musleabihf:0.2.5
 	cross build --target armv5te-unknown-linux-musleabi --release
-	{{clean}} && docker image rm ghcr.io/cross-rs/armv5te-unknown-linux-musleabi:0.2.5
+	-{{clean}} && docker image rm ghcr.io/cross-rs/armv5te-unknown-linux-musleabi:0.2.5
 	cross build --target armv7-unknown-linux-musleabi --release
-	{{clean}} && docker image rm ghcr.io/cross-rs/armv7-unknown-linux-musleabi:0.2.5
+	-{{clean}} && docker image rm ghcr.io/cross-rs/armv7-unknown-linux-musleabi:0.2.5
 	cross build --target armv7-unknown-linux-musleabihf --release
-	{{clean}} && docker image rm ghcr.io/cross-rs/armv7-unknown-linux-musleabihf:0.2.5
+	-{{clean}} && docker image rm ghcr.io/cross-rs/armv7-unknown-linux-musleabihf:0.2.5
 	cross build --target i586-unknown-linux-musl --release
-	{{clean}} && docker image rm ghcr.io/cross-rs/i586-unknown-linux-musl:0.2.5
+	-{{clean}} && docker image rm ghcr.io/cross-rs/i586-unknown-linux-musl:0.2.5
 	cross build --target i686-unknown-linux-musl --release
-	{{clean}} && docker image rm ghcr.io/cross-rs/i686-unknown-linux-musl:0.2.5
+	-{{clean}} && docker image rm ghcr.io/cross-rs/i686-unknown-linux-musl:0.2.5
 	cross build --target mips64-unknown-linux-muslabi64 --release
+	-{{clean}} && docker image rm ghcr.io/cross-rs/mips64-unknown-linux-muslabi64:0.2.5
 	cross build --target mips64el-unknown-linux-muslabi64 --release
+	-{{clean}} && docker image rm ghcr.io/cross-rs/mips64el-unknown-linux-muslabi64:0.2.5
+	cross build --target powerpc-unknown-linux-gnu --release
+	-{{clean}} && docker image rm ghcr.io/cross-rs/powerpc-unknown-linux-gnu:0.2.5
+	cross build --target powerpc64-unknown-linux-gnu --release
+	-{{clean}} && docker image rm ghcr.io/cross-rs/powerpc64-unknown-linux-gnu:0.2.5
+	cross build --target powerpc64le-unknown-linux-gnu --release
+	-{{clean}} && docker image rm ghcr.io/cross-rs/powerpc64le-unknown-linux-gnu:0.2.5
+	cross build --target riscv64gc-unknown-linux-gnu --release
+	-{{clean}} && docker image rm ghcr.io/cross-rs/riscv64gc-unknown-linux-gnu:0.2.5
+	cross build --target s390x-unknown-linux-gnu --release
+	-{{clean}} && docker image rm ghcr.io/cross-rs/s390x-unknown-linux-gnu:0.2.5
+
 
 # Copy binaries to artifacts directory
 cp-binaries:
@@ -65,4 +78,9 @@ cp-binaries:
 	cp target/i686-unknown-linux-musl/release/pid1 ./artifacts/pid1-i686-unknown-linux-musl
 	cp target/mips64-unknown-linux-muslabi64/release/pid1 ./artifacts/pid1-mips64-unknown-linux-muslabi64
 	cp target/mips64el-unknown-linux-muslabi64/release/pid1 ./artifacts/pid1-mips64el-unknown-linux-muslabi64
+	cp target/powerpc-unknown-linux-gnu/release/pid1 ./artifacts/pid1-powerpc-unknown-linux-gnu
+	cp target/powerpc64-unknown-linux-gnu/release/pid1 ./artifacts/pid1-powerpc64-unknown-linux-gnu
+	cp target/powerpc64le-unknown-linux-gnu/release/pid1 ./artifacts/pid1-powerpc64le-unknown-linux-gnu
+	cp target/riscv64gc-unknown-linux-gnu/release/pid1 ./artifacts/pid1-riscv64gc-unknown-linux-gnu
+	cp target/s390x-unknown-linux-gnu/release/pid1 ./artifacts/pid1-s390x-unknown-linux-gnu
 	file artifacts/*
