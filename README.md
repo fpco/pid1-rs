@@ -62,6 +62,26 @@ RUN chmod +x /usr/bin/pid1
 ENTRYPOINT [ "pid1" ]
 ```
 
+Various options supported by the binary:
+
+``` shellsession
+❯ pid1 --help
+Usage:
+
+Arguments:
+  <COMMAND>  Process to run
+  [ARGS]...  Arguments to the process
+
+Options:
+  -w, --workdir <DIR>        Specify working direcory
+  -t, --timeout <TIMEOUT>    Timeout (in seconds) to wait for child proess to exit [default: 2]
+  -v, --verbose              Turn on verbose output
+  -e, --env <ENV>            Override environment variables. Can specify multiple times
+  -u, --user-id <USER_ID>    Run command with user ID
+  -g, --group-id <GROUP_ID>  Run command with group ID
+  -h, --help                 Print help
+```
+
 ## Development
 
 The testing steps are documented in [Development.md](./Development.md). We only have

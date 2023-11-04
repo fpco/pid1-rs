@@ -26,18 +26,33 @@ pub(crate) struct Pid1App {
     /// Override environment variables. Can specify multiple times.
     #[arg(short, long, value_parser=parse_key_val::<OsString, OsString>)]
     pub(crate) env: Vec<(OsString, OsString)>,
-    /// Process arguments
+    /// Run command with user ID
+    #[arg(short, long, value_name = "USER_ID")]
+    user_id: Option<u32>,
+    /// Run command with group ID
+    #[arg(short, long, value_name = "GROUP_ID")]
+    group_id: Option<u32>,
+    /// Process to run
     #[arg(required = true)]
-    child_process: Vec<String>,
+    pub(crate) command: String,
+    /// Arguments to the process
+    #[arg(required = false)]
+    pub(crate) args: Vec<String>,
 }
 
 impl Pid1App {
     #[cfg(target_family = "unix")]
     pub(crate) fn run(self) -> ! {
-        let mut child = std::process::Command::new(&self.child_process[0]);
-        let child = child.args(&self.child_process[1..]);
+        let mut child = std::process::Command::new(&self.command);
+        let child = child.args(&self.args[..]);
         if let Some(workdir) = &self.workdir {
             child.current_dir(workdir);
+        }
+        if let Some(user_id) = &self.user_id {
+            child.uid(*user_id);
+        }
+        if let Some(group_id) = &self.group_id {
+            child.gid(*group_id);
         }
         for (key, value) in &self.env {
             child.env(key, value);
@@ -55,10 +70,7 @@ impl Pid1App {
             let child = match child {
                 Ok(child) => child,
                 Err(err) => {
-                    eprintln!(
-                        "pid1: {} spawn failed. Got error: {err}",
-                        self.child_process[0]
-                    );
+                    eprintln!("pid1: {} spawn failed. Got error: {err}", self.command);
                     std::process::exit(1);
                 }
             };
