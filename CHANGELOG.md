@@ -1,3 +1,7 @@
+# v0.1.3
+
+- Support options for running with specific user id and group id.
+
 # v0.1.2
 
 - Support binaries for more architectures
