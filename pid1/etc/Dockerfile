@@ -8,4 +8,6 @@ COPY sigterm_handler /usr/bin/sigterm_handler
 
 COPY sigterm_loop /usr/bin/sigterm_loop
 
+COPY dumb_shell /usr/bin/dumb_shell
+
 CMD ["/simple"]
