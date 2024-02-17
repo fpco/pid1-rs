@@ -10,7 +10,8 @@ used for testing this library.
 - zombie.rs: Creates zombie process
 - sigterm_handler.rs: Program which has SIGTERM handler and exits on receiving it.
 - sigterm_loop.rs: A buggy program which doesn't exit on SIGTERM
-
+- dumb_shell.rs: Alternative shell that you can use to test your
+  program since bash does reaping of process.
 
 ## Environment setup
 

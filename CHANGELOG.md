@@ -1,3 +1,8 @@
+# Unreleased
+
+- Add integration testing
+- Add examples/dumb_shell.rs code for easy testing.
+
 # v0.1.3
 
 - Support options for running with specific user id and group id.

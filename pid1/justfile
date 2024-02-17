@@ -18,7 +18,7 @@ build-image:
 # Run test image
 run-image:
 	docker rm pid1rs || exit 0
-	docker run --name pid1rs -t pid1rstest /simple --sleep
+	docker run --name pid1rs -t pid1rstest /simple --sleep 20
 
 # Run zombie in the container
 run-zombie:
@@ -28,6 +28,7 @@ run-zombie:
 test: build-image
 	docker rm pid1rs || exit 0
 	docker run --name pid1rs -t pid1rstest
+	cargo test
 
 # Run SIGTERM test
 sigterm-test:
