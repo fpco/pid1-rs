@@ -18,8 +18,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     if args.len() > 1 {
-	let duration = &args[2];
-	let duration = duration.parse().expect("Expected int value");
+        let duration = &args[2];
+        let duration = duration.parse().expect("Expected int value");
         println!("Going to sleep {duration} seconds");
         std::thread::sleep(std::time::Duration::from_secs(duration));
     }
