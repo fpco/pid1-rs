@@ -1,7 +1,9 @@
-# Unreleased
+# v0.1.4
 
 - Add integration testing
 - Add examples/dumb_shell.rs code for easy testing.
+- Add tokio usage example.
+- Bump dependencies
 
 # v0.1.3
 

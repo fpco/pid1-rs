@@ -27,7 +27,7 @@ jobs:
         - windows-latest
 
         toolchain:
-        - 1.71.0
+        - 1.82.0
         - stable
         - nightly
 

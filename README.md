@@ -84,5 +84,5 @@ Options:
 
 ## Development
 
-The testing steps are documented in [Development.md](./Development.md). We only have
-some part of it integrated in CI.
+The testing steps are documented in [Development.md](./Development.md). We have also
+integration tests for the same.
