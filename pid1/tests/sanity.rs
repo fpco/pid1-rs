@@ -89,7 +89,6 @@ fn reaps_zombie_process() {
     });
 
     let stdout = String::from_utf8(output.stdout).unwrap();
-    println!("foo: {stdout}");
 
     assert!(output.status.success(), "Process exited successfully");
 
