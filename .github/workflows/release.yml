@@ -23,7 +23,7 @@ jobs:
         - ubuntu-latest
 
         toolchain:
-        - 1.71.0
+        - 1.82.0
 
     steps:
     - uses: actions/checkout@v2
