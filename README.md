@@ -84,5 +84,5 @@ Options:
 
 ## Development
 
-The testing steps are documented in [Development.md](./Development.md). We have also
+The testing steps are documented in [Development.md](./Development.md). We also have
 integration tests for the same.

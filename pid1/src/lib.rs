@@ -100,9 +100,6 @@ impl Pid1Settings {
             }
             pid1_handling(self, signals, child)
         } else {
-            if self.log {
-                eprintln!("pid1-rs: Process not running as Pid 1: PID {pid}");
-            }
             Ok(())
         }
     }
