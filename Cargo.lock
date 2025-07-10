@@ -189,7 +189,7 @@ dependencies = [
 
 [[package]]
 name = "pid1"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "nix",
  "rand",
@@ -200,7 +200,7 @@ dependencies = [
 
 [[package]]
 name = "pid1-exe"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "clap",
  "pid1",
