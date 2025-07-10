@@ -51,10 +51,6 @@ fn sanity_test() {
         stdout.contains(&"pid1-rs: Process running as PID 1"),
         "One process runs as pid1",
     );
-    assert!(
-        stdout.contains(&"pid1-rs: Process not running as Pid 1"),
-        "Child process not running as pid1",
-    );
 }
 
 #[test]

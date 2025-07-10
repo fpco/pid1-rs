@@ -1,3 +1,8 @@
+# v0.1.5
+
+- Bump versions.
+- Remove confusing non PID 1 log message.
+
 # v0.1.4
 
 - Add integration testing
