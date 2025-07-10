@@ -27,15 +27,14 @@ jobs:
         - windows-latest
 
         toolchain:
-        - 1.82.0
+        - 1.88.0
         - stable
         - nightly
-
     steps:
     - uses: actions/checkout@v2
-    - uses: extractions/setup-just@v1
+    - uses: taiki-e/install-action@v2
       with:
-        just-version: 1.10.0
+        tool: just@1.40.0
     - uses: Swatinem/rust-cache@v2
       with:
         key: ${{ runner.os }}-${{ hashFiles('Cargo.lock') }}-${{ matrix.toolchain }}
@@ -58,7 +57,5 @@ jobs:
     - name: Run pid1 tests
       run: just test-init-image
       if: runner.os == 'Linux'
-    - name: clippy
-      run: cargo clippy -- --deny "warnings"
-    - name: fmt
-      run: cargo fmt -- --check
+    - name: Lint
+      run: just lint

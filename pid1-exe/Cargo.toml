@@ -13,8 +13,8 @@ categories = ["command-line-utilities"]
 
 [dependencies]
 pid1 = { path = "../pid1", version = "0.1.1" }
-signal-hook = "0.3.17"
-clap = { version = "4.5.26", default-features = false, features = ["std", "derive", "help"]}
+signal-hook = "0.3.18"
+clap = { version = "4.5.41", default-features = false, features = ["std", "derive", "help"]}
 
 [[bin]]
 name = "pid1"
