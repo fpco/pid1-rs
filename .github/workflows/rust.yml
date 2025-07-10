@@ -25,7 +25,6 @@ jobs:
         - ubuntu-latest
         - macos-latest
         - windows-latest
-
         toolchain:
         - 1.88.0
         - stable
@@ -59,3 +58,4 @@ jobs:
       if: runner.os == 'Linux'
     - name: Lint
       run: just lint
+      if: matrix.toolchain == '1.88.0'
