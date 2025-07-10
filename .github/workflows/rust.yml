@@ -35,13 +35,13 @@ jobs:
     - uses: taiki-e/install-action@v2
       with:
         tool: just@1.40.0
-    - uses: Swatinem/rust-cache@v2
-      with:
-        key: ${{ runner.os }}-${{ hashFiles('Cargo.lock') }}-${{ matrix.toolchain }}
     - uses: dtolnay/rust-toolchain@master
       with:
         toolchain: ${{ matrix.toolchain }}
         components: clippy, rustfmt
+    - uses: Swatinem/rust-cache@v2
+      with:
+        key: ${{ runner.os }}-${{ hashFiles('Cargo.lock') }}-${{ matrix.toolchain }}
     - name: Install musl tools
       run: |
         sudo apt-get install -y musl-tools
