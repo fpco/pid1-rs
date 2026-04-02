@@ -76,7 +76,7 @@ fn reaps_zombie_process() {
                 container.image.as_str(),
                 "/simple",
                 "--sleep",
-                "30",
+                "4",
             ]);
             output.unwrap()
         });
@@ -93,7 +93,7 @@ fn reaps_zombie_process() {
         (result.join().unwrap(), zombie_result.join().unwrap())
     });
 
-    let stdout = String::from_utf8(output.stdout).unwrap();
+    let stdout = String::from_utf8_lossy(&output.stdout);
 
     assert!(output.status.success(), "Process exited successfully");
 
@@ -121,7 +121,7 @@ fn child_process_status_code() {
                 container.image.as_str(),
                 "/simple",
                 "--sleep",
-                "20",
+                "5",
             ]);
             output.unwrap()
         });
@@ -136,7 +136,7 @@ fn child_process_status_code() {
                     "/proc/1/task/1/children",
                 ])
                 .unwrap();
-            let child_pid_str = String::from_utf8(child_pid_output.stdout).unwrap();
+            let child_pid_str = String::from_utf8_lossy(&child_pid_output.stdout);
             let child_pid = child_pid_str.trim();
 
             println!("Child process: {child_pid}");
@@ -194,7 +194,7 @@ fn sigterm_handling() {
     assert!(output.status.success(), "Pid1 exited successfully");
     assert!(exec_process.status.success(), "Killed process successfully");
 
-    let stdout = String::from_utf8(output.stdout).unwrap();
+    let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(
         stdout.contains("App got SIGTERM 15, going to exit"),
         "Application got SIGTERM from pid1"
@@ -235,7 +235,7 @@ fn sigterm_ignore() {
     );
     assert!(exec_process.status.success(), "Killed process successfully");
 
-    let stdout = String::from_utf8(output.stdout).unwrap();
+    let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(
         stdout.contains("This APP cannot be killed by SIGTERM (15)"),
         "Application ignores SIGTERM"
@@ -253,7 +253,7 @@ fn reaps_multiple_zombie_processes() {
     // This test simulates a scenario where multiple orphaned processes are created
     // in quick succession. This can lead to coalesced SIGCHLD signals.
     // A correct pid1 implementation should reap all of them.
-    let (run_output, zombie_check_output, ps_output) = std::thread::scope(|s| {
+    let (run_output, zombie_check_output) = std::thread::scope(|s| {
         // 1. Run a long-running process in the container as PID 1's child.
         let result = s.spawn(|| {
             container
@@ -302,13 +302,9 @@ fn reaps_multiple_zombie_processes() {
             ])
             .unwrap();
 
-        let ps_output = container
-            .plain_run(&["exec", container.name.as_str(), "ps", "-aux"])
-            .unwrap();
-
         // 4. Clean up is handled by the main process exiting after its sleep
         // duration. This allows the `docker run` command to finish naturally.
-        (result.join().unwrap(), zombie_check_output, ps_output)
+        (result.join().unwrap(), zombie_check_output)
     });
 
     let stdout = String::from_utf8_lossy(&run_output.stdout);
@@ -327,6 +323,9 @@ fn reaps_multiple_zombie_processes() {
     // The zombie check command succeeds (exit code 0) if no zombies are found.
     if zombie_check_output.status.code() != Some(0) {
         // If the check fails, get more debug info from the container.
+        let ps_output = container
+            .plain_run(&["exec", container.name.as_str(), "ps", "-aux"])
+            .unwrap();
         let ps_stdout = String::from_utf8_lossy(&ps_output.stdout);
         let zombie_stderr = String::from_utf8_lossy(&zombie_check_output.stderr);
         panic!(
