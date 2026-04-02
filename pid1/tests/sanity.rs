@@ -31,11 +31,22 @@ impl Container {
 
 impl Drop for Container {
     fn drop(&mut self) {
-        let status = Command::new("docker")
-            .args(["rm", self.name.as_str()])
-            .spawn();
-        if let Err(status) = status {
-            eprintln!("Error dropping container {status}");
+        // Use rm -f to stop and remove the container. This is robust
+        // and ensures cleanup even if tests fail to stop the container.
+        let output = Command::new("docker")
+            .args(["rm", "-f", self.name.as_str()])
+            .output();
+
+        if let Ok(output) = output {
+            if !output.status.success() {
+                // It is possible that the container was already removed, so
+                // we don't want to panic here.
+                eprintln!(
+                    "pid1-rs-test: Could not remove container {}. Stderr: {}",
+                    self.name,
+                    String::from_utf8_lossy(&output.stderr)
+                );
+            }
         }
     }
 }
@@ -45,7 +56,7 @@ fn sanity_test() {
     let container = Container::new("pid1rstest".to_owned());
     let output = container.run().unwrap();
     assert!(output.status.success(), "Process exited successfully");
-    let stdout = String::from_utf8(output.stdout).unwrap();
+    let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(
         stdout.contains(&"pid1-rs: Process running as PID 1"),
         "One process runs as pid1",
@@ -241,7 +252,7 @@ fn reaps_multiple_zombie_processes() {
     // This test simulates a scenario where multiple orphaned processes are created
     // in quick succession. This can lead to coalesced SIGCHLD signals.
     // A correct pid1 implementation should reap all of them.
-    let (_run_output, zombie_check_output) = std::thread::scope(|s| {
+    let (run_output, zombie_check_output) = std::thread::scope(|s| {
         // 1. Run a long-running process in the container as PID 1's child.
         let result = s.spawn(|| {
             container
@@ -260,16 +271,25 @@ fn reaps_multiple_zombie_processes() {
         std::thread::sleep(Duration::from_secs(2)); // Give container time to start.
 
         // 2. Concurrently spawn multiple processes that will become zombies.
-        // The `zombie` example forks a child and the parent exits, orphaning the child.
-        // The child then exits, becoming a zombie to be reaped by pid1.
+        // We run a command in a subshell `(...)` and in the background `&`.
+        // The `sh` process that docker exec starts exits immediately, orphaning
+        // the subshell process. The subshell process is then adopted by PID 1.
+        // It then sleeps for a second and exits, becoming a zombie for pid1 to reap.
         for _ in 0..3 {
             s.spawn(|| {
                 container
-                    .plain_run(&["exec", "-t", container.name.as_str(), "zombie"])
+                    .plain_run(&[
+                        "exec",
+                        container.name.as_str(),
+                        "sh",
+                        "-c",
+                        "sleep 1 &",
+                    ])
                     .unwrap();
             });
         }
-        std::thread::sleep(Duration::from_secs(5)); // Allow time for zombies to be created.
+        // Allow time for zombies to be created and reaped (1s sleep + buffer).
+        std::thread::sleep(Duration::from_secs(3));
 
         // 3. Check for zombie processes inside the container.
         // This command exits with 0 if no zombies are found, and 1 otherwise.
@@ -293,9 +313,19 @@ fn reaps_multiple_zombie_processes() {
         (result.join().unwrap(), zombie_check_output)
     });
 
+    let stdout = String::from_utf8_lossy(&run_output.stdout);
+    // We expect at least 3 zombies to be reaped. In practice, this may be higher
+    // due to the shell processes from `docker exec` and the main child process
+    // also being reaped by pid1. We assert that there are at least 3 reaps,
+    // and then rely on the zombie check to confirm that *all* zombies were handled.
+    let reaped_count = stdout.matches("pid1-rs: Reaped PID").count();
+    assert!(
+        reaped_count >= 3,
+        "Expected to reap at least 3 zombie processes, but reaped {}. stdout:\n{}",
+        reaped_count, stdout
+    );
+
     // The zombie check command succeeds (exit code 0) if no zombies are found.
-    // Exit code 1 means zombies were found.
-    // Exit code 2 means there was an I/O error during the check.
     assert_eq!(
         zombie_check_output.status.code(),
         Some(0),
