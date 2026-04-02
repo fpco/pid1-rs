@@ -337,3 +337,43 @@ fn reaps_multiple_zombie_processes() {
         );
     }
 }
+
+#[test]
+fn reaps_orphaned_grandchildren() {
+    let container = Container::new("pid1rstest".to_owned());
+    // This test validates that pid1 can adopt and reap orphaned "grandchildren".
+    // 1. We run `/simple` with `--create-grandchildren`, which spawns 3 `sleep` processes.
+    // 2. The `/simple` process (the parent) then sleeps and exits.
+    // 3. This orphans the `sleep` processes, which should be adopted by pid1.
+    // 4. As the `sleep` processes exit, pid1 should reap them.
+    // 5. Finally, pid1 reaps the original `/simple` child and exits.
+    let output = container
+        .plain_run(&[
+            "run",
+            "--name",
+            container.name.as_str(),
+            "-t",
+            container.image.as_str(),
+            "/simple",
+            "--create-grandchildren",
+            "--sleep",
+            "3", // Long enough for children to be spawned, short enough for test speed.
+        ])
+        .unwrap();
+
+    assert!(
+        output.status.success(),
+        "Container should exit successfully. Stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    // We expect to reap the 3 grandchildren + the main `/simple` child process.
+    let reaped_count = stdout.matches("pid1-rs: Reaped PID").count();
+    assert!(
+        reaped_count >= 4,
+        "Expected to reap at least 4 processes (3 grandchildren + 1 child), but found {}. stdout:\n{}",
+        reaped_count,
+        stdout
+    );
+}
