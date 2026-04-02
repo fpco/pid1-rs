@@ -98,13 +98,13 @@ fn reaps_zombie_process() {
     assert!(output.status.success(), "Process exited successfully");
 
     assert!(
-        zombie_output.status.success(),
-        "Process exited successfully"
+        stdout.contains(&"pid1-rs: Reaped PID"),
+        "Successfully Reaped process",
     );
 
     assert!(
-        stdout.contains(&"pid1-rs: Reaped PID"),
-        "Successfully Reaped process",
+        zombie_output.status.success(),
+        "Process exited successfully"
     );
 }
 

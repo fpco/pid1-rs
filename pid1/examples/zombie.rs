@@ -18,6 +18,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             std::process::exit(0);
         }
         Ok(ForkResult::Child) => {
+            let id = std::process::id();
+            println!("Child Process ID is {id}");
+
             std::process::exit(0);
         }
         Err(_) => println!("Fork failed"),
