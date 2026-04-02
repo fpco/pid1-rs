@@ -234,3 +234,72 @@ fn sigterm_ignore() {
         "Application got SIGTERM"
     );
 }
+
+#[test]
+fn reaps_multiple_zombie_processes() {
+    let container = Container::new("pid1rstest".to_owned());
+    // This test simulates a scenario where multiple orphaned processes are created
+    // in quick succession. This can lead to coalesced SIGCHLD signals.
+    // A correct pid1 implementation should reap all of them.
+    let (_run_output, zombie_check_output) = std::thread::scope(|s| {
+        // 1. Run a long-running process in the container as PID 1's child.
+        let result = s.spawn(|| {
+            container
+                .plain_run(&[
+                    "run",
+                    "--name",
+                    container.name.as_str(),
+                    "-t",
+                    container.image.as_str(),
+                    "/simple",
+                    "--sleep",
+                    "20",
+                ])
+                .unwrap()
+        });
+        std::thread::sleep(Duration::from_secs(2)); // Give container time to start.
+
+        // 2. Concurrently spawn multiple processes that will become zombies.
+        // The `zombie` example forks a child and the parent exits, orphaning the child.
+        // The child then exits, becoming a zombie to be reaped by pid1.
+        for _ in 0..3 {
+            s.spawn(|| {
+                container
+                    .plain_run(&["exec", "-t", container.name.as_str(), "zombie"])
+                    .unwrap();
+            });
+        }
+        std::thread::sleep(Duration::from_secs(5)); // Allow time for zombies to be created.
+
+        // 3. Check for zombie processes inside the container.
+        // This command exits with 0 if no zombies are found, and 1 otherwise.
+        // `grep -q Z` exits with 0 if 'Z' (zombie state) is found, 1 otherwise.
+        // The `!` negates the exit code, so the whole command succeeds (exits 0)
+        // if no zombies are found.
+        let zombie_check_output = container
+            .plain_run(&[
+                "exec",
+                "-t",
+                container.name.as_str(),
+                "sh",
+                "-c",
+                "! cat /proc/*/status 2>/dev/null | grep 'State:' | grep -q Z",
+            ])
+            .unwrap();
+
+        // 4. Clean up by stopping the container. This allows the `docker run`
+        // command to finish, preventing the test from hanging.
+        let _ = container.plain_run(&["stop", "-t", "1", container.name.as_str()]);
+        (result.join().unwrap(), zombie_check_output)
+    });
+
+    // The zombie check command succeeds (exit code 0) if no zombies are found.
+    // Exit code 1 means zombies were found.
+    // Exit code 2 means there was an I/O error during the check.
+    assert_eq!(
+        zombie_check_output.status.code(),
+        Some(0),
+        "Zombie check failed. Stderr:\n{}",
+        String::from_utf8_lossy(&zombie_check_output.stderr)
+    );
+}
