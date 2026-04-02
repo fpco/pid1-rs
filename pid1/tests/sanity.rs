@@ -1,7 +1,6 @@
 use rand::distributions::{Alphanumeric, DistString};
 use std::{process::Command, time::Duration};
 
-#[derive(Clone)]
 struct Container {
     name: String,
     image: String,
@@ -58,7 +57,6 @@ fn reaps_zombie_process() {
     let container = Container::new("pid1rstest".to_owned());
     let (output, zombie_output) = std::thread::scope(|s| {
         let result = s.spawn(|| {
-            let container = container.clone();
             let output = container.plain_run(&[
                 "run",
                 "--name",
@@ -74,7 +72,6 @@ fn reaps_zombie_process() {
 
         let zombie_result = s.spawn(|| {
             std::thread::sleep(Duration::from_secs(2));
-            let container = container.clone();
             let zombie_output = container
                 .plain_run(&["exec", "-t", container.name.as_str(), "zombie"])
                 .unwrap();
@@ -104,7 +101,6 @@ fn child_process_status_code() {
     let container = Container::new("pid1rstest".to_owned());
     let (output, exec_process) = std::thread::scope(|s| {
         let result = s.spawn(|| {
-            let container = container.clone();
             let output = container.plain_run(&[
                 "run",
                 "--name",
@@ -120,7 +116,6 @@ fn child_process_status_code() {
 
         let kill_result = s.spawn(|| {
             std::thread::sleep(Duration::from_secs(2));
-            let container = container.clone();
             let ps_output = container
                 .plain_run(&[
                     "exec",
@@ -166,7 +161,6 @@ fn sigterm_handling() {
     let container = Container::new("pid1rstest".to_owned());
     let (output, exec_process) = std::thread::scope(|s| {
         let result = s.spawn(|| {
-            let container = container.clone();
             let output = container.plain_run(&[
                 "run",
                 "--name",
@@ -180,7 +174,6 @@ fn sigterm_handling() {
 
         let kill_result = s.spawn(|| {
             std::thread::sleep(Duration::from_secs(2));
-            let container = container.clone();
             let ps_output = container
                 .plain_run(&[
                     "exec",
@@ -220,7 +213,6 @@ fn sigterm_ignore() {
     let container = Container::new("pid1rstest".to_owned());
     let (output, exec_process) = std::thread::scope(|s| {
         let result = s.spawn(|| {
-            let container = container.clone();
             let output = container.plain_run(&[
                 "run",
                 "--name",
@@ -234,7 +226,6 @@ fn sigterm_ignore() {
 
         let kill_result = s.spawn(|| {
             std::thread::sleep(Duration::from_secs(2));
-            let container = container.clone();
             container
                 .plain_run(&["exec", "-t", container.name.as_str(), "kill", "1"])
                 .unwrap()
