@@ -116,21 +116,18 @@ fn child_process_status_code() {
 
         let kill_result = s.spawn(|| {
             std::thread::sleep(Duration::from_secs(2));
-            let ps_output = container
+            let child_pid_output = container
                 .plain_run(&[
                     "exec",
-                    "-t",
                     container.name.as_str(),
-                    "ps",
-                    "-o",
-                    "pid",
-                    "a",
+                    "cat",
+                    "/proc/1/task/1/children",
                 ])
                 .unwrap();
-            let ps_output = String::from_utf8(ps_output.stdout).unwrap();
-            let ps_output = ps_output.lines().skip(2).next().unwrap().trim();
+            let child_pid_str = String::from_utf8(child_pid_output.stdout).unwrap();
+            let child_pid = child_pid_str.trim();
 
-            println!("Child process: {ps_output}");
+            println!("Child process: {child_pid}");
 
             container
                 .plain_run(&[
@@ -139,7 +136,7 @@ fn child_process_status_code() {
                     container.name.as_str(),
                     "kill",
                     "-12",
-                    ps_output,
+                    child_pid,
                 ])
                 .unwrap()
         });
@@ -174,22 +171,6 @@ fn sigterm_handling() {
 
         let kill_result = s.spawn(|| {
             std::thread::sleep(Duration::from_secs(2));
-            let ps_output = container
-                .plain_run(&[
-                    "exec",
-                    "-t",
-                    container.name.as_str(),
-                    "ps",
-                    "-o",
-                    "pid",
-                    "a",
-                ])
-                .unwrap();
-            let ps_output = String::from_utf8(ps_output.stdout).unwrap();
-            let ps_output = ps_output.lines().skip(2).next().unwrap().trim();
-
-            println!("Child process: {ps_output}");
-
             container
                 .plain_run(&["exec", "-t", container.name.as_str(), "kill", "1"])
                 .unwrap()
