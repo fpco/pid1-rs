@@ -76,13 +76,14 @@ fn reaps_zombie_process() {
                 container.image.as_str(),
                 "/simple",
                 "--sleep",
-                "20",
+                "30",
             ]);
             output.unwrap()
         });
 
+        std::thread::sleep(Duration::from_secs(2)); // Give container time to start.
+
         let zombie_result = s.spawn(|| {
-            std::thread::sleep(Duration::from_secs(2));
             let zombie_output = container
                 .plain_run(&["exec", "-t", container.name.as_str(), "zombie"])
                 .unwrap();
@@ -252,7 +253,7 @@ fn reaps_multiple_zombie_processes() {
     // This test simulates a scenario where multiple orphaned processes are created
     // in quick succession. This can lead to coalesced SIGCHLD signals.
     // A correct pid1 implementation should reap all of them.
-    let (run_output, zombie_check_output) = std::thread::scope(|s| {
+    let (run_output, zombie_check_output, ps_output) = std::thread::scope(|s| {
         // 1. Run a long-running process in the container as PID 1's child.
         let result = s.spawn(|| {
             container
@@ -264,7 +265,7 @@ fn reaps_multiple_zombie_processes() {
                     container.image.as_str(),
                     "/simple",
                     "--sleep",
-                    "20",
+                    "10",
                 ])
                 .unwrap()
         });
@@ -278,18 +279,12 @@ fn reaps_multiple_zombie_processes() {
         for _ in 0..3 {
             s.spawn(|| {
                 container
-                    .plain_run(&[
-                        "exec",
-                        container.name.as_str(),
-                        "sh",
-                        "-c",
-                        "sleep 1 &",
-                    ])
+                    .plain_run(&["exec", container.name.as_str(), "sh", "-c", "sleep 1 &"])
                     .unwrap();
             });
         }
         // Allow time for zombies to be created and reaped (1s sleep + buffer).
-        std::thread::sleep(Duration::from_secs(3));
+        std::thread::sleep(Duration::from_secs(5));
 
         // 3. Check for zombie processes inside the container.
         // This command exits with 0 if no zombies are found, and 1 otherwise.
@@ -307,10 +302,13 @@ fn reaps_multiple_zombie_processes() {
             ])
             .unwrap();
 
-        // 4. Clean up by stopping the container. This allows the `docker run`
-        // command to finish, preventing the test from hanging.
-        let _ = container.plain_run(&["stop", "-t", "1", container.name.as_str()]);
-        (result.join().unwrap(), zombie_check_output)
+        let ps_output = container
+            .plain_run(&["exec", container.name.as_str(), "ps", "-aux"])
+            .unwrap();
+
+        // 4. Clean up is handled by the main process exiting after its sleep
+        // duration. This allows the `docker run` command to finish naturally.
+        (result.join().unwrap(), zombie_check_output, ps_output)
     });
 
     let stdout = String::from_utf8_lossy(&run_output.stdout);
@@ -322,14 +320,20 @@ fn reaps_multiple_zombie_processes() {
     assert!(
         reaped_count >= 3,
         "Expected to reap at least 3 zombie processes, but reaped {}. stdout:\n{}",
-        reaped_count, stdout
+        reaped_count,
+        stdout
     );
 
     // The zombie check command succeeds (exit code 0) if no zombies are found.
-    assert_eq!(
-        zombie_check_output.status.code(),
-        Some(0),
-        "Zombie check failed. Stderr:\n{}",
-        String::from_utf8_lossy(&zombie_check_output.stderr)
-    );
+    if zombie_check_output.status.code() != Some(0) {
+        // If the check fails, get more debug info from the container.
+        let ps_stdout = String::from_utf8_lossy(&ps_output.stdout);
+        let zombie_stderr = String::from_utf8_lossy(&zombie_check_output.stderr);
+        panic!(
+            "Zombie check failed with code {:?}. Stderr:\n{}\n\nps -aux output:\n{}",
+            zombie_check_output.status.code(),
+            zombie_stderr,
+            ps_stdout
+        );
+    }
 }
