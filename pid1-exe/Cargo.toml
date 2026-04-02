@@ -22,4 +22,4 @@ clap = { version = "4.5.41", default-features = false, features = [
   "std",
 ] }
 pid1 = { version = "0.1.5", path = "../pid1" }
-signal-hook = "0.3.18"
+signal-hook = "0.4.3"
