@@ -453,6 +453,7 @@ fn environment_variables_propagated() {
         "Environment variable not found in child process. Env: {vars:?}"
     );
 }
+
 #[test]
 fn non_pid1_subreaper_reaps_children() {
     let container = Container::new("pid1rstest".to_owned());
@@ -490,6 +491,42 @@ fn non_pid1_subreaper_reaps_children() {
         reaped_count >= 3,
         "Non-PID-1 subreaper did not reap its own children. Found {}. Full stdout:\n{}",
         reaped_count,
+        stdout
+    );
+}
+
+#[test]
+fn non_pid1_without_subreaper_leaves_zombies() {
+    let container = Container::new("pid1rstest".to_owned());
+    // This test verifies that when subreaper is disabled, a non-PID-1
+    // process does NOT reap its children, leaving them to be orphaned.
+    let output = container
+        .plain_run(&[
+            "run",
+            "--name",
+            container.name.as_str(),
+            "-e",
+            "PID1_NO_SUBREAPER=1",
+            "-t",
+            container.image.as_str(),
+            "sh",
+            "-c",
+            // This is the same command as the subreaper test.
+            "/simple --create-grandchildren --sleep 3",
+        ])
+        .unwrap();
+
+    assert!(
+        output.status.success(),
+        "Container script should exit successfully. Stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    // With subreaper disabled, the /simple process should not reap anything.
+    assert!(
+        !stdout.contains("pid1-rs: Reaped PID"),
+        "Process with subreaper disabled should not reap children. Full stdout:\n{}",
         stdout
     );
 }
