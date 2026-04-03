@@ -48,4 +48,4 @@ sigloop-test:
 
 # Exec into that docker container
 exec-shell:
-	docker exec -it pid1rs sh
+	docker exec -it pid1rs bash

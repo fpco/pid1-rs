@@ -190,6 +190,7 @@ fn pid1_handling(settings: Pid1Settings, mut signals: Signals, child: Child) -> 
                 // with a non-blocking `waitpid` call to reap all zombies.
                 // Using a blocking `wait` would hang if there are no more
                 // children to reap, preventing us from handling other signals.
+                // Reference: https://stackoverflow.com/a/8398491/1651941
                 loop {
                     let wait_status = match nix::sys::wait::waitpid(
                         None,
