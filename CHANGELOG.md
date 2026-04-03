@@ -2,6 +2,8 @@
 
 - Bump versions.
 - Improve test suite by fixing multiple drop invocation.
+- Fix Signal coalescing issue.
+- Sub reaping functionality
 
 # v0.1.5
 

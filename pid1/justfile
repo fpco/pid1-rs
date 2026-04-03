@@ -20,7 +20,12 @@ build-image:
 # Run test image
 run-image:
 	docker rm pid1rs || exit 0
-	docker run --name pid1rs -t pid1rstest /simple --sleep 20
+	docker run --name pid1rs -t pid1rstest /simple --sleep 50
+
+# Run test image but via bash
+run-image-bash:
+	docker rm pid1rs || exit 0
+	docker run -it --name pid1rs -t pid1rstest bash
 
 # Run zombie in the container
 run-zombie:
