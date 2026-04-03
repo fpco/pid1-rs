@@ -223,8 +223,8 @@ fn pid1_handling(settings: Pid1Settings, mut signals: Signals, child: Child) -> 
                             break;
                         }
                         WaitStatus::Stopped(..) => None,
-                        WaitStatus::PtraceEvent(..) => None,
-                        WaitStatus::PtraceSyscall(..) => None,
+                        #[cfg(any(target_os = "linux", target_os = "android"))]
+                        WaitStatus::PtraceEvent(..) | WaitStatus::PtraceSyscall(..) => None,
                         WaitStatus::Continued(..) => None,
                     };
 
