@@ -14,6 +14,8 @@ use std::ffi::c_int;
 use std::process::Child;
 use std::time::Duration;
 
+const RELAUNCH_GUARD_ENV: &str = "__PID1_RS_RELAUNCHED";
+
 /// The `Error` enum indicates that the [`relaunch_if_pid1`] was not
 /// successful.
 #[derive(thiserror::Error, Debug)]
@@ -21,6 +23,9 @@ pub enum Error {
     /// Failed when respawning of non-PID1 child process
     #[error("Failed when respawning non-PID1 child process: {0}")]
     SpawnChild(std::io::Error),
+    /// Could not determine the executable path for relaunch
+    #[error("Could not determine executable path for relaunch")]
+    ExecutableNotFound,
 }
 
 /// Relaunch process as PID with default value of [`Pid1Settings`]
@@ -40,6 +45,7 @@ pub fn relaunch_if_pid1() -> Result<(), Error> {
 pub struct Pid1Settings {
     log: bool,
     timeout: Duration,
+    sub_reaper: bool,
 }
 
 impl Pid1Settings {
@@ -59,6 +65,17 @@ impl Pid1Settings {
     /// is 2 seconds.
     pub fn timeout(&mut self, timeout: Duration) -> &mut Self {
         self.timeout = timeout;
+        self
+    }
+
+    /// Enable the subreaper feature on Linux (kernel >= 3.4). This is disabled
+    /// by default, and is not needed if the process is already running as PID 1.
+    /// This ensures that any orphaned descendants of this
+    /// process will be reparented to it, rather than to the host's
+    /// init process. This is crucial for cleaning up complex process
+    /// trees and daemonized children.
+    pub fn enable_sub_reaper(&mut self, enable: bool) -> &mut Self {
+        self.sub_reaper = enable;
         self
     }
 
@@ -90,6 +107,12 @@ impl Pid1Settings {
     /// systems. For Windows, it will return [`Ok(())`].
     #[cfg(target_family = "unix")]
     pub fn launch(self) -> Result<(), Error> {
+        // This environment variable is used to prevent the relaunched
+        // child process from re-initializing pid1 logic.
+        if std::env::var_os(RELAUNCH_GUARD_ENV).is_some() {
+            return Ok(());
+        }
+
         let pid = std::process::id();
         if pid == 1 {
             // Install signal handles before we launch child process
@@ -100,6 +123,22 @@ impl Pid1Settings {
             }
             pid1_handling(self, signals, child)
         } else {
+            if self.sub_reaper {
+                // Set the subreaper flag. This ensures that any orphaned descendants
+                // of this process will be reparented to it, rather than to the
+                // host's init process. This is crucial for cleaning up complex
+                // process trees and daemonized children.
+                if let Err(e) = nix::sys::prctl::set_child_subreaper(true) {
+                    if self.log {
+                        eprintln!("pid1-rs: Could not set subreaper: {e}");
+                    }
+                }
+            } else if self.log {
+                eprintln!(
+                    "pid1-rs: Warning: process is not PID 1 and subreaper is not enabled. \
+                     Orphaned processes may not be reaped."
+                );
+            }
             Ok(())
         }
     }
@@ -124,16 +163,18 @@ impl Default for Pid1Settings {
         Self {
             log: Default::default(),
             timeout: Duration::from_secs(2),
+            sub_reaper: false,
         }
     }
 }
 
 #[cfg(target_family = "unix")]
 fn relaunch() -> Result<Child, Error> {
-    let exe = std::env::current_exe().unwrap();
-    let args = std::env::args_os().skip(1).collect::<Vec<_>>();
+    let mut args = std::env::args_os();
+    let exe = args.next().ok_or(Error::ExecutableNotFound)?;
     std::process::Command::new(exe)
         .args(args)
+        .env(RELAUNCH_GUARD_ENV, "1")
         .spawn()
         .map_err(Error::SpawnChild)
 }
