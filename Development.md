@@ -1,7 +1,6 @@
 # Testing
 
-This needs to be automated in future. But as of now they have to be
-mostly tested manually.
+All of these tests have been automated in [sanity.rs](./pid1/tests/sanity.rs).
 
 There are some programs under the directory `examples`, that will be
 used for testing this library.
@@ -33,8 +32,6 @@ PID   USER     TIME  COMMAND
 # Tests
 
 ## Basic functionality
-
-This is also tested in CI, so you can likely skip this. But here are the steps:
 
 ``` shellsession
 ❯ just test
@@ -182,7 +179,7 @@ print anything since it is not handled.
 
 ## SIGTERM ignore
 
-This is for testing an application where it ignore SIGTERM and
+This is for testing an application where it ignores SIGTERM and
 continus on doing some work. This library should be able to force kill
 such processes.
 

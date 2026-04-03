@@ -1,3 +1,8 @@
+# v0.1.6
+
+- Bump versions.
+- Improve test suite by fixing multiple drop invocation.
+
 # v0.1.5
 
 - Bump versions.

@@ -12,11 +12,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("Parent process: going to sleep and exit");
             // We are sleeping so that the child process that exits
             // without being waited upon appears in the process table
-            // as zombie.
-            std::thread::sleep(Duration::from_secs(20));
+            // as zombie. When this parent process exits, the zombie child
+            // will be orphaned and adopted by pid1.
+            std::thread::sleep(Duration::from_secs(1));
             std::process::exit(0);
         }
         Ok(ForkResult::Child) => {
+            let id = std::process::id();
+            println!("Child Process ID is {id}");
+
             std::process::exit(0);
         }
         Err(_) => println!("Fork failed"),
