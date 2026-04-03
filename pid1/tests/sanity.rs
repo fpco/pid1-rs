@@ -376,3 +376,80 @@ fn reaps_orphaned_grandchildren() {
         stdout
     );
 }
+
+#[test]
+fn environment_variables_propagated() {
+    let container = Container::new("pid1rstest".to_owned());
+    let (output, env_vars) = std::thread::scope(|s| {
+        // 1. Run a container with a custom environment variable. The `/simple`
+        //    executable will be relaunched as a child of our pid1 process.
+        let result = s.spawn(|| {
+            container
+                .plain_run(&[
+                    "run",
+                    "--name",
+                    container.name.as_str(),
+                    "-e",
+                    "MY_TEST_VAR=hello_world",
+                    "-t",
+                    container.image.as_str(),
+                    "/simple",
+                    "--sleep",
+                    "5",
+                ])
+                .unwrap()
+        });
+
+        // 2. In parallel, inspect the environment of the child process.
+        let check_result = s.spawn(|| {
+            std::thread::sleep(Duration::from_secs(2)); // Give container time to start.
+
+            // 3. Get the PID of the child process managed by pid1.
+            //    PID 1 in the container is our pid1-rs handler. Its child is the
+            //    relaunched `/simple` process.
+            let child_pid_output = container
+                .plain_run(&[
+                    "exec",
+                    container.name.as_str(),
+                    "cat",
+                    "/proc/1/task/1/children",
+                ])
+                .unwrap();
+            let child_pid_str = String::from_utf8_lossy(&child_pid_output.stdout);
+            let child_pid = child_pid_str.trim();
+
+            println!("Child process: {child_pid}");
+
+            // 4. Read the environment of the child process from the /proc filesystem.
+            //    The `/proc/{pid}/environ` file contains a list of null-terminated
+            //    strings, e.g., `VAR1=value1\0VAR2=value2\0`.
+            let env_output = container
+                .plain_run(&[
+                    "exec",
+                    container.name.as_str(),
+                    "cat",
+                    &format!("/proc/{child_pid}/environ"),
+                ])
+                .unwrap();
+
+            String::from_utf8(env_output.stdout).unwrap()
+        });
+
+        (result.join().unwrap(), check_result.join().unwrap())
+    });
+
+    assert!(
+        output.status.success(),
+        "Container should exit successfully. Stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    // 5. To parse the environment data, we split it by the null character `\0`.
+    //    This gives us a list of "KEY=value" strings.
+    // Reference: https://man7.org/linux/man-pages/man5/proc_pid_environ.5.html
+    let vars: Vec<&str> = env_vars.split('\0').collect();
+    assert!(
+        vars.contains(&"MY_TEST_VAR=hello_world"),
+        "Environment variable not found in child process. Env: {vars:?}"
+    );
+}
