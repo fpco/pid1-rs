@@ -1,6 +1,6 @@
 [package]
 name = "pid1-exe"
-version = "0.1.5"
+version = "0.1.6"
 edition = "2021"
 description = "pid1 handling library for proper signal and zombie reaping of the PID1 process"
 readme = "../README.md"
@@ -21,5 +21,5 @@ clap = { version = "4.5.41", default-features = false, features = [
   "help",
   "std",
 ] }
-pid1 = { version = "0.1.5", path = "../pid1" }
+pid1 = { version = "0.1.6", path = "../pid1" }
 signal-hook = "0.4.3"

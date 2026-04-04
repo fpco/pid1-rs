@@ -2,15 +2,14 @@
 
 All of these tests have been automated in [sanity.rs](./pid1/tests/sanity.rs).
 
-There are some programs under the directory `examples`, that will be
-used for testing this library.
+The `examples` directory contains several programs used for testing this library.
 
-- simple.rs: Program which demonstrate the usage of pid1-rs library
-- zombie.rs: Creates zombie process
-- sigterm_handler.rs: Program which has SIGTERM handler and exits on receiving it.
-- sigterm_loop.rs: A buggy program which doesn't exit on SIGTERM
-- dumb_shell.rs: Alternative shell that you can use to test your
-  program since bash does reaping of process.
+- `simple.rs`: A program that demonstrates the usage of the `pid1-rs` library.
+- `zombie.rs`: Creates a zombie process.
+- `sigterm_handler.rs`: A program that has a `SIGTERM` handler and exits upon receiving the signal.
+- `sigterm_loop.rs`: A buggy program that does not exit on `SIGTERM`.
+- `dumb_shell.rs`: An alternative shell for testing, since `bash`
+  automatically reaps child processes.
 
 ## Environment setup
 
@@ -46,11 +45,11 @@ Wed Sep 27 08:29:37 UTC 2023
 Wed Sep 27 08:29:39 UTC 2023
 ```
 
-You have to ensure that it exits with status code 0. The above test
-confirms the following things:
+Ensure that the process exits with a status code of 0. The test above
+confirms the following:
 
-- The `simple` program was executed as pid 1.
-- It relaunched the process as pid 7 which executed various processes.
+- The `simple` program was executed as PID 1.
+- It relaunched itself as PID 7, which then executed various child processes.
 
 ## Zombie process
 
@@ -71,8 +70,8 @@ Going to sleep 500 seconds
 Wed Sep 27 08:35:03 UTC 2023
 ```
 
-And while it's executing create a new shell run the recipe which will
-create zombie process:
+While it's executing, open a new shell and run the recipe to create a
+zombie process:
 
 ``` shellsession
 ❯ just run-zombie
@@ -81,8 +80,8 @@ Process ID is 9
 Parent process: going to sleep and exit
 ```
 
-You could see the following logs on the `simple` process about a
-process being reaped
+You should see the following logs from the `simple` process, indicating
+that a process has been reaped:
 
 ``` shellsession
 ...
@@ -92,7 +91,7 @@ Reaped pid: 15
 
 ## Child Exit code status propagation
 
-- Run recipe `run-image`:
+- Run the `run-image` recipe:
 
 ``` shellsession
 ❯ just run-image
@@ -111,7 +110,7 @@ Going to sleep 500 seconds
 Wed Sep 27 08:35:03 UTC 2023
 ```
 
-- Run recipe `exec-shell` and do the testing:
+- Run the `exec-shell` recipe and perform the test:
 
 ``` shellsession
 ❯ just exec-shell
@@ -129,7 +128,7 @@ root          17  0.0  0.0   2460  1608 pts/1    R+   12:34   0:00 ps -aux
 / # kill -12 7
 ```
 
-- See the logs of the `run-image` recipe and find the exit status
+- Check the logs of the `run-image` recipe to find the exit status
   code:
 
 ``` shellsession
@@ -137,12 +136,12 @@ root          17  0.0  0.0   2460  1608 pts/1    R+   12:34   0:00 ps -aux
 error: Recipe `run-image` failed on line 21 with exit code 140
 ```
 
-And the exit code status 140 is indeed correct (128 + 12).
+The exit code 140 is correct (128 + 12).
 
 ## SIGINT/SIGTERM handling
 
-The aim is to check that the child process's SIGTERM handler is called
-in case it's defined.
+The goal of this test is to verify that the child process's `SIGTERM`
+handler is called if it is defined.
 
 These are the signal codes:
 
@@ -161,27 +160,26 @@ pid1-rs: Process not running as Pid 1: PID 7
 This APP can be killed by SIGTERM (15)
 ```
 
-And now send SIGTERM to the pid1:
+Now, send `SIGTERM` to the PID 1 process:
 
 ``` shellsession
 ❯ just send-sigterm
 ```
 
-Confirm from the logs that the SIGTERM handler is called and the exit
-status is 0:
+Confirm from the logs that the `SIGTERM` handler was called and that
+the process exited with a status of 0:
 
 ``` shellsession
 App got SIGTERM 15, going to exit
 ```
 
-Now do the same test with `SIGINT` and you can confirm that it won't
-print anything since it is not handled.
+Now, perform the same test with `SIGINT`. You can confirm that nothing
+is printed, as this signal is not handled by the application.
 
 ## SIGTERM ignore
 
-This is for testing an application where it ignores SIGTERM and
-continus on doing some work. This library should be able to force kill
-such processes.
+This test is for an application that ignores `SIGTERM` and continues
+running. This library should be able to forcibly kill such processes.
 
 Execute the recipe `sigloop-test`:
 
@@ -195,7 +193,7 @@ pid1-rs: Process not running as Pid 1: PID 7
 This APP ignores SIGTERM (15)
 ```
 
-And now send SIGTERM to the pid1:
+Now, send `SIGTERM` to the PID 1 process:
 
 ``` shellsession
 ❯ just send-sigterm
@@ -209,5 +207,6 @@ App got SIGTERM 15, but will not exit
 error: Recipe `sigloop-test` failed on line 44 with exit code 137
 ```
 
-You can confirm from the status code that the child process got killed
-by (137 - 128 = 9) SIGKIL as the application ignores SIGTERM.
+You can confirm from the status code (137) that the child process was
+killed by `SIGKILL` (signal 9, exit code 128 + 9), because the
+application ignored `SIGTERM`.
