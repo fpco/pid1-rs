@@ -2,6 +2,7 @@
 
 - Bump versions.
 - Improve test suite by fixing multiple drop invocation.
+- Fix signal coalescing issue.
 
 # v0.1.5
 
